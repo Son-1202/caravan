@@ -15,7 +15,7 @@
 | ID | Role | Title | Status |
 |---|---|---|---|
 | T-01 | DEV | Scaffold + diorama + post-FX | done |
-| T-04 | DEV | src/sim combat + run + tests | in progress |
+| T-04 | DEV | src/sim combat + run + tests | done (29 tests) |
 | T-05 | ART | Regions 1–2 + heroes | done |
 | T-02 | CONTENT | GDD + data JSON + story | done |
 | T-03 | ART | 3 key-art candidates | done (style bible = B) |
