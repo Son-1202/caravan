@@ -1,13 +1,18 @@
 // Game app (T-09): screen state machine driven by Run.status; owns the march/battle
 // render modes over the shared RenderContext. Screens are DOM overlays in src/ui/screens.
-import { HEROES, REGION_BY_ID } from '../data';
-import type { HeroId, SceneId } from '../data';
+import { HEROES, REGION_BY_ID, STORY } from '../data';
+import type { HeroId, RegionId, SceneId } from '../data';
 import { Run, SeededRng, type Formation } from '../sim';
 import type { RenderContext } from '../render/context';
 import { getRegion, isRegionId } from '../render/regions';
 import { h, installTooltips } from '../ui/dom';
 import type { ScreenView } from '../ui/screens/common';
-import { startScreen } from '../ui/screens/start';
+import { titleScreen } from '../ui/screens/title';
+import { DialogueView } from '../ui/dialogue';
+import { GameAudio, type MusicMode } from '../audio';
+import '../ui/story.css';
+import { loadSave, recordRun, withSettings, writeSave, type SaveData, type Settings } from './save';
+import { installRotateOverlay } from '../ui/rotate';
 import { mapScreen } from '../ui/screens/map';
 import { formationScreen } from '../ui/screens/formation';
 import { rewardScreen } from '../ui/screens/reward';
@@ -26,8 +31,16 @@ export class App {
   run!: Run;
   seed = 0;
   screen: Screen = 'start';
-  /** Story hook for T-12: show scene `id`, then call done(). Default: skip. */
-  onStory: (id: SceneId, done: () => void) => void = (_id, done) => done();
+  /** Story hook: show scene `id`, then call done(). Bots skip it. */
+  onStory: (id: SceneId, done: () => void) => void = (id, done) => (this.bot.name ? done() : this.playStory(id, done));
+  readonly audio = new GameAudio();
+  save: SaveData;
+  /** next run (and current run) is hard mode */
+  hard = false;
+  /** wall-clock seconds of the current run (excludes pauses) */
+  runTime = 0;
+  dialogue: DialogueView | null = null;
+  private recorded: { rank: number } | null = null;
   battle: BattleCtl | null = null;
   readonly bot: BotDriver;
   formation: Formation;
@@ -43,6 +56,11 @@ export class App {
   constructor(readonly ctx: RenderContext, parent: HTMLElement, seed: number) {
     parent.append(this.ui);
     this.hideTip = installTooltips(this.ui);
+    this.save = loadSave();
+    this.applySettings(this.save.settings);
+    this.audio.installUnlock();
+    this.installUiSounds();
+    installRotateOverlay(parent);
     this.march = new MarchCast(ctx.diorama);
     this.formation = safeFormation(loadFormation(), HEROES.map((x) => x.id));
     this.bot = new BotDriver(this);
@@ -52,25 +70,74 @@ export class App {
   }
 
   // ---------- lifecycle ----------
-  newRun(seed: number): void {
+  newRun(seed: number, hard = this.hard): void {
     this.endBattle(false);
+    this.closeDialogue();
+    this.storyOpen = false;
     this.seed = seed >>> 0;
-    this.run = new Run(this.seed);
+    this.hard = hard;
+    this.run = new Run(this.seed, hard);
     this.visited.clear();
     this.started = false;
     this.eventOutcomeShown = false;
+    this.runTime = 0;
+    this.recorded = null;
     this.refresh();
   }
 
-  begin(): void {
+  begin(hard?: boolean): void {
     if (this.started) return;
+    if (hard !== undefined && hard !== this.hard) this.newRun(this.seed, hard);
     this.started = true;
     this.refresh();
   }
 
+  /** New run straight onto the road (skips the title). */
   restart(): void {
     this.bot.stop();
     this.newRun(randomSeed());
+    this.begin();
+  }
+
+  /** Back to the title screen with a fresh seed. */
+  toTitle(): void {
+    this.bot.stop();
+    this.newRun(randomSeed(), false);
+  }
+
+  updateSettings(patch: Partial<Settings>): void {
+    this.save = withSettings(this.save, patch);
+    writeSave(this.save);
+    this.applySettings(this.save.settings);
+  }
+
+  private applySettings(st: Settings): void {
+    const pf = this.ctx.postfx;
+    pf.autoQuality = st.quality === 'auto';
+    if (st.quality !== 'auto') pf.setQuality(st.quality);
+    this.audio.setVolume(st.volume);
+  }
+
+  /** Play a story scene over the dimmed diorama (also used by __debug.story). */
+  playStory(id: SceneId, done: () => void): void {
+    const scene = STORY.scenes.find((x) => x.id === id);
+    if (!scene) return done();
+    this.closeDialogue();
+    this.setMusic('story');
+    this.dialogue = new DialogueView(this.ui, scene, {
+      onDone: () => {
+        this.dialogue = null;
+        done();
+      },
+      onType: () => this.audio.sfx.ui('type'),
+      onAdvance: () => this.audio.sfx.ui('tick'),
+    });
+  }
+
+  private closeDialogue(): void {
+    const d = this.dialogue;
+    this.dialogue = null;
+    d?.dispose();
   }
 
   /** Re-derive the screen from Run state and render it. */
@@ -84,22 +151,75 @@ export class App {
         if (this.run === run && run.status === 'story') run.ackStory();
         this.refresh();
       };
+      this.screen = 'story';
+      this.march.show(true);
+      this.show({ el: h('div', { class: 'screen screen--story' }) });
       if (id) this.onStory(id, done);
       else done();
       return;
     }
+    if ((run.status === 'won' || run.status === 'lost') && this.started && !this.recorded) this.recordEnd();
     this.screen = screenFor(run.status, { started: this.started, battleLive: !!this.battle, eventOutcomeShown: this.eventOutcomeShown });
     this.syncRegion();
     this.march.show(this.screen !== 'battle');
     this.show(this.build(this.screen));
+    this.syncMusic();
     this.bot.onScreen(this.screen);
+  }
+
+  private recordEnd(): void {
+    const run = this.run;
+    const won = run.status === 'won';
+    const r = run.map[Math.min(run.regionIdx, run.map.length - 1)];
+    const rec = {
+      won, hard: run.hard, seed: run.seed, time: this.runTime, regions: Math.min(4, run.regionIdx),
+      regionName: r ? REGION_BY_ID[r.region].name : '', fights: Math.max(0, run.stats.fights - (won ? 0 : 1)),
+      breaks: run.stats.breaks, ignites: run.stats.ignites, damage: Math.round(run.stats.damageDealt), relics: [...run.relics], date: Date.now(),
+    };
+    this.save = recordRun(this.save, rec);
+    writeSave(this.save);
+    this.recorded = { rank: this.save.bestRuns.indexOf(this.save.bestRuns.find((x) => x.date === rec.date && x.seed === rec.seed) ?? rec) };
+  }
+
+  private currentRegion(): RegionId {
+    const r = this.run.map[Math.min(this.run.regionIdx, this.run.map.length - 1)];
+    return r?.region ?? 'whisperpine';
+  }
+
+  private setMusic(mode: MusicMode): void {
+    this.audio.music.set(mode, this.ctx.diorama.region.id as RegionId);
+  }
+
+  private syncMusic(): void {
+    const s = this.screen;
+    const kind = this.run.pendingEncounter()?.kind;
+    const mode: MusicMode = s === 'start' ? 'title' : s === 'battle' ? (kind === 'boss' ? 'boss' : 'battle') : s === 'won' || s === 'lost' ? 'story' : 'map';
+    this.audio.music.set(mode, this.currentRegion());
+  }
+
+  private installUiSounds(): void {
+    this.ui.addEventListener('click', (e) => {
+      const b = e.target instanceof Element ? e.target.closest('button') : null;
+      if (!b || b.disabled || b.closest('.dlg')) return;
+      this.audio.sfx.ui(b.classList.contains('btn--ember') || b.classList.contains('mnode') ? 'confirm' : 'tick');
+    });
+    this.ui.addEventListener('pointerover', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      const b = e.target instanceof Element ? e.target.closest('button') : null;
+      if (b && !b.disabled && !(e.relatedTarget instanceof Node && b.contains(e.relatedTarget))) this.audio.sfx.ui('hover');
+    });
   }
 
   private build(s: Screen): ScreenView {
     const run = this.run;
     const reg = this.regionName();
     switch (s) {
-      case 'start': return startScreen(this.seed, () => this.begin());
+      case 'start': return titleScreen({ seed: this.seed, save: this.save, unlocked: this.audio.engine.ready }, {
+        begin: (hard) => this.begin(hard),
+        settings: (p) => this.updateSettings(p),
+        unlock: () => this.audio.engine.unlock(),
+        preview: () => this.audio.sfx.ui('confirm'),
+      });
       case 'story': return { el: h('div', { class: 'screen' }) };
       case 'map': return mapScreen(run, this.visited, { choose: (id) => this.chooseNode(id), useItem: (id) => this.useMapItem(id) });
       case 'formation': {
@@ -124,7 +244,7 @@ export class App {
         next: () => this.eventContinue(),
       });
       case 'won':
-      case 'lost': return endScreen(run, () => this.restart());
+      case 'lost': return endScreen(run, { time: this.runTime, rank: this.recorded?.rank ?? -1 }, { again: () => this.restart(), title: () => this.toTitle() });
     }
   }
 
@@ -196,7 +316,9 @@ export class App {
       botSpeed: this.bot.speed,
       onEnd: () => this.endBattle(true),
       onQuit: () => this.restart(),
+      onEvents: (ev) => this.audio.onSimEvents(ev),
     });
+    if (!this.bot.name) this.battle.setSpeed(this.save.settings.speed);
     this.refresh();
   }
 
@@ -221,6 +343,9 @@ export class App {
     this.march.update(dt);
     this.battle?.update(dt);
     this.bot.update(dt);
+    this.audio.update(dt);
+    const st = this.run.status;
+    if (this.started && st !== 'won' && st !== 'lost' && !this.battle?.paused) this.runTime += dt;
   }
 
   onResize(): void {
@@ -229,7 +354,7 @@ export class App {
 
   private onKey(e: KeyboardEvent): void {
     const b = this.battle;
-    if (!b) return;
+    if (!b || this.dialogue) return;
     if (e.key === ' ' || e.code === 'Space') {
       e.preventDefault();
       b.ignite();

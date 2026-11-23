@@ -16,6 +16,8 @@ export interface BattleCtlOpts {
   botSpeed: number;
   onEnd(): void;
   onQuit(): void;
+  /** every batch of sim events (audio) */
+  onEvents?(events: SimEvent[]): void;
 }
 
 export class BattleCtl {
@@ -87,6 +89,7 @@ export class BattleCtl {
     if (events.length === 0) return;
     this.view.applyEvents(events);
     this.hud.onEvents(events);
+    this.opts.onEvents?.(events);
   }
 
   update(dtReal: number): void {

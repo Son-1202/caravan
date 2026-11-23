@@ -13,7 +13,7 @@ interface PwPage {
   waitForFunction(fn: string, arg: unknown, o: { timeout: number }): Promise<unknown>;
   evaluate<T>(fn: string): Promise<T>;
   click(sel: string): Promise<void>;
-  mouse: { move(x: number, y: number): Promise<void> };
+  mouse: { move(x: number, y: number): Promise<void>; click(x: number, y: number): Promise<void> };
   screenshot(o: { path: string }): Promise<unknown>;
   on(ev: 'console', cb: (m: { type(): string; text(): string }) => void): void;
   on(ev: 'pageerror', cb: (e: Error) => void): void;
@@ -126,7 +126,10 @@ async function main(): Promise<void> {
     await page.waitForTimeout(2500);
     await shot(page, 'start');
 
-    await page.click('.screen--start .btn');
+    await page.mouse.click(640, 400); // tap to start (T-12 title)
+    await page.waitForTimeout(600);
+    await page.click('.title__begin');
+    await page.evaluate('window.__debug.app.dialogue?.finish()'); // skip the prologue (T-12)
     await untilScreen(page, 'map');
     await page.waitForTimeout(2500);
     await shot(page, 'map');
@@ -137,7 +140,7 @@ async function main(): Promise<void> {
       await untilScreen(page, 'event');
       await page.waitForTimeout(600);
       await shot(page, 'event');
-      await page.evaluate(`window.__debug.newRun(${SEED}); window.__debug.app.begin()`);
+      await page.evaluate(`window.__debug.newRun(${SEED}); window.__debug.app.begin(); window.__debug.app.dialogue?.finish()`);
       await untilScreen(page, 'map');
     }
 

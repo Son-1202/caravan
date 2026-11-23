@@ -38,7 +38,10 @@ export class BotDriver {
         if (!app.battle.over) playBattleWithBot(b, name);
         app.endBattle(true);
       }
+      this.name = name; // bots skip story scenes
       app.begin();
+      this.name = null;
+      app.dialogue?.finish();
       const res = autoPlayRun(app.run, name, this.rng);
       app.refresh();
       return Promise.resolve(res);
@@ -83,6 +86,7 @@ export class BotDriver {
     const run = app.run;
     switch (app.screen) {
       case 'start': app.begin(); break;
+      case 'story': app.dialogue?.finish(); break;
       case 'map': app.chooseNode(botNode(run, bot, rng).id); break;
       case 'formation': app.startBattle(botFormation(bot, rng)); break;
       case 'reward': {
