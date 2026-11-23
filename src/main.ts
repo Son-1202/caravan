@@ -1,84 +1,46 @@
 import '@fontsource/pixelify-sans/400.css';
 import '@fontsource/silkscreen/400.css';
 import './style.css';
+import './ui/ui.css';
 import * as THREE from 'three';
 import { Diorama } from './render/diorama';
 import { DioramaCamera } from './render/camera';
-import { PostFX, type Quality } from './render/postfx';
-import { createDemoCast } from './render/demoScene';
-import { REGION_IDS, getRegion, isRegionId, type RegionId } from './render/regions';
-import { DemoHud } from './ui/hud';
-import { startCombatDemo, type CombatDemo } from './render/devCombatDemo';
+import { PostFX } from './render/postfx';
+import type { RenderContext } from './render/context';
+import { App, randomSeed } from './game/app';
+import { startDevDemo, type Loop } from './game/devDemo';
 
-// Query params (demo/QA): ?region=frostspire&quality=high|low&scroll=1.5
+// Query params: ?seed=<n> (game) · ?demo=combat|diorama (dev demos) · ?quality=high|low
 const params = new URLSearchParams(location.search);
-const app = document.getElementById('app') ?? document.body;
+const root = document.getElementById('app') ?? document.body;
 
-const renderer = new THREE.WebGLRenderer({
-  antialias: false,
-  powerPreference: 'high-performance',
-  stencil: false,
-  depth: true,
-});
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', stencil: false, depth: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-app.append(renderer.domElement);
+root.append(renderer.domElement);
 
 const scene = new THREE.Scene();
 const cam = new DioramaCamera(window.innerWidth / window.innerHeight);
 const diorama = new Diorama(scene);
 const postfx = new PostFX(renderer, scene, cam.camera);
-// ?demo=combat runs a real seeded sim battle through CombatView (T-07)
-const combatMode = params.get('demo') === 'combat';
-const cast = combatMode ? null : createDemoCast(diorama.actors);
-const hud = new DemoHud(app);
+const ctx: RenderContext = { renderer, scene, cam, diorama, postfx };
+window.__debug = { scene, diorama, postfx, renderer };
 
-const forcedQuality = params.get('quality');
-if (forcedQuality === 'high' || forcedQuality === 'low') {
+const q = params.get('quality');
+if (q === 'high' || q === 'low') {
   postfx.autoQuality = false;
-  postfx.setQuality(forcedQuality);
+  postfx.setQuality(q);
 }
 
-function hint(q: Quality): string {
-  return `1-4 region · Q quality (${q}) · C chroma pulse · Space scroll`;
+let loop: Loop;
+const demo = params.get('demo');
+if (demo === 'combat' || demo === 'diorama') loop = startDevDemo(ctx, root, params);
+else {
+  const seedParam = Number(params.get('seed'));
+  const app = new App(ctx, root, Number.isFinite(seedParam) && seedParam > 0 ? seedParam : randomSeed());
+  loop = { update: (dt) => (app.update(dt), dt), onResize: () => app.onResize() };
 }
-postfx.onQualityChange = (q) => hud.setHint(hint(q));
-hud.setHint(hint(postfx.quality));
-
-function setRegion(id: RegionId): void {
-  diorama.setRegion(id);
-  postfx.setGrade(getRegion(id).grade);
-  hud.setRegion(getRegion(id).name);
-}
-
-const startRegion = params.get('region') ?? 'whisperpine';
-setRegion(isRegionId(startRegion) ? startRegion : 'whisperpine');
-
-let combat: CombatDemo | null = null;
-if (combatMode) {
-  combat = startCombatDemo({ renderer, scene, cam, diorama, postfx }, params);
-  hud.setRegion(`${getRegion(diorama.region.id).name} · combat demo`);
-}
-
-const baseScroll = combatMode ? 0 : Number(params.get('scroll') ?? 1.2);
-let scrolling = true;
-diorama.setScroll(baseScroll);
-
-window.addEventListener('keydown', (e) => {
-  const idx = ['1', '2', '3', '4'].indexOf(e.key);
-  if (idx >= 0) setRegion(REGION_IDS[idx]);
-  else if (e.key === 'q' || e.key === 'Q') {
-    postfx.autoQuality = false;
-    postfx.setQuality(postfx.quality === 'high' ? 'low' : 'high');
-  } else if (e.key === 'c' || e.key === 'C') {
-    postfx.pulseChromatic();
-    if (cast) cast.ember.surge = 1;
-  } else if (e.key === ' ') {
-    scrolling = !scrolling;
-    diorama.setScroll(scrolling ? baseScroll : 0);
-  }
-});
 
 function onResize(): void {
   const w = window.innerWidth;
@@ -87,24 +49,20 @@ function onResize(): void {
   cam.setAspect(w / h);
   diorama.layout(w / h);
   postfx.setSize(w, h);
-  combat?.view.onResize();
+  loop.onResize();
 }
 window.addEventListener('resize', onResize);
 onResize();
-
-window.__debug = { scene, diorama, postfx, setRegion, renderer, combat };
 
 let last = performance.now();
 let elapsed = 0;
 function frame(now: number): void {
   const dtRaw = Math.min((now - last) / 1000, 0.1);
   last = now;
-  combat?.update(dtRaw);
-  const dt = combat?.frozen ? 0 : dtRaw;
+  const dt = loop.update(dtRaw);
   elapsed += dt;
   cam.update(elapsed);
   diorama.update(dt, elapsed);
-  cast?.update(elapsed, dt);
   postfx.render(dt);
   requestAnimationFrame(frame);
 }
