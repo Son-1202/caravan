@@ -28,6 +28,10 @@ const ULT_LEAD: Record<string, number> = { bram: 0.12, lysa: 0.42, oren: 0.15, k
 const WINDUP = 0.12;
 /** fraction of the fg layer pushed below frame so it never covers the units */
 const FG_DROP = 0.3;
+/** in combat the fg only frames the bottom of the screen: hidden above the stage floor */
+const FG_CLIP = 0.64;
+/** cold rim outline on bosses */
+const BOSS_RIM = '#9fd2ff';
 /** lunge duration 0.42 s, contact at 42% */
 const MELEE_IMPACT = 0.42 * 0.42;
 
@@ -71,7 +75,7 @@ export class CombatView implements CombatFxHost {
     ctx.diorama.setScroll(0);
     // march mode scrolls the layers; restore the authored framing so the fg stays off the stage
     ctx.diorama.resetScroll();
-    ctx.diorama.setFgDrop(FG_DROP);
+    ctx.diorama.setFgDrop(FG_DROP, FG_CLIP);
     // soft front fill so sprites read against the dusk diorama
     this.fill.position.set(0, 5, 14);
     this.root.add(this.fill, this.fill.target);
@@ -117,6 +121,8 @@ export class CombatView implements CombatFxHost {
         height: h,
         color: HERO_COLORS[s.defId] ?? '#4a4a5e',
         flipX: shouldFlip(s.side, s.defId),
+        // BUG-6: bosses get a cold rim so they read against the dark late regions
+        outline: tier === 'boss' || tier === 'final' ? BOSS_RIM : undefined,
       });
       unit.onLand = (u) => landingDust(this.fx.bursts, u.worldPoint(0, this.tmp2), this.dust, u.width);
       const p = stagePosition(s.side, row, slot, big);

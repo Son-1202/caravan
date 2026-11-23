@@ -1,6 +1,6 @@
 # STATE — single source of truth
 
-**Phase:** 5–6 Content & Polish (deploy still waiting on the user's Vercel import)
+**Phase:** 8 Ship
 **Live URL:** https://caravan-of-embers.vercel.app
 **Repo:** https://github.com/Son-1202/caravan
 **Credits spent:** 66 / 100
@@ -24,6 +24,9 @@
 | T-11 | ART | relics, Mira, CG, map, UI frame | done |
 | T-09 | DEV | game flow + UI | done (after T-09-fix) |
 | T-12 | DEV | story, title, end screens, save, audio, mobile | done |
+| T-14 | QA | e2e + screenshot review | done (15/15 PASS; 1 major, 5 minor bugs) |
+| T-15-1 | DEV | fg canopy, stuck hit-flash, boss outline | done |
+| T-15-2 | DEV | map zoom, mobile map, nameplates, title layout | done |
 | T-13 | DEV | render juice + polish | done |
 | T-02 | CONTENT | GDD + data JSON + story | done |
 | T-03 | ART | 3 key-art candidates | done (style bible = B) |

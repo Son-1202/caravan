@@ -29,6 +29,15 @@ interface Layer {
 const ANCHOR_Y: Record<LayerName, number> = { far: 0.5, mid: 0.1, fg: 0 };
 /** Emissive self-light for painted layers (fg stays darker = silhouette). */
 const PAINT_SELF_LIGHT: Record<LayerName, number> = { far: 0.7, mid: 0.6, fg: 0.35 };
+/**
+ * The fg is a floor-framing layer: it never draws in the upper part of the frame.
+ * Painted fg art can carry tall props (Whisperpine's tree canopy, Frostspire's dead
+ * branch) whose trunks end up cropped off by the cover-fit/MARGIN, leaving a dark
+ * block floating over the stage. Everything above `clipTop` (fraction of the screen
+ * height from the top) is hidden, fading back in over `FG_CLIP_FADE` below it.
+ */
+export const FG_CLIP_MARCH = 0.28;
+const FG_CLIP_FADE = 0.1;
 
 const loader = new THREE.TextureLoader();
 
@@ -53,6 +62,10 @@ export class Diorama {
   private scrollSpeed = 0;
   /** Lower the fg layer by this fraction of its height (combat keeps the stage clear). */
   private fgDrop = 0;
+  /** fg hidden above this screen fraction (0 = top). See FG_CLIP_MARCH. */
+  private fgClipTop = FG_CLIP_MARCH;
+  /** plane-v (0 bottom .. 1 top) where the fg is fully hidden / fully shown */
+  private readonly fgClip = { uHide: { value: 2 }, uShow: { value: 2 } };
   private aspect = 16 / 9;
 
   constructor(private readonly scene: THREE.Scene) {
@@ -71,6 +84,7 @@ export class Diorama {
         mat.depthTest = false;
         mat.depthWrite = false;
         mesh.renderOrder = 10;
+        clipFg(mat, this.fgClip);
       }
       this.layers.push({ name, mesh, width: 1, imgAspect: 0 });
       this.root.add(mesh);
@@ -108,7 +122,13 @@ export class Diorama {
     place(this.sky, LAYER_Z.sky);
     for (const l of this.layers) {
       l.width = place(l.mesh, l.mesh.position.z);
-      if (l.name === 'fg') l.mesh.position.y -= this.fgDrop * l.mesh.scale.y;
+      if (l.name === 'fg') {
+        l.mesh.position.y -= this.fgDrop * l.mesh.scale.y;
+        // screen fraction f (0 = top) sits at plane-v 0.5 + (0.5 - f) / MARGIN + drop
+        const v = (f: number): number => 0.5 + (0.5 - f) / MARGIN + this.fgDrop;
+        this.fgClip.uHide.value = v(this.fgClipTop);
+        this.fgClip.uShow.value = v(this.fgClipTop + FG_CLIP_FADE);
+      }
       this.fitLayer(l);
     }
     const depth = GROUND.zNear - GROUND.zFar;
@@ -120,8 +140,10 @@ export class Diorama {
     this.dressing.layout(gw, GROUND.zFar, GROUND.zNear);
   }
 
-  setFgDrop(frac: number): void {
+  /** Lower the fg by `frac` of its height and hide it above `clipTop` (screen fraction). */
+  setFgDrop(frac: number, clipTop = FG_CLIP_MARCH): void {
     this.fgDrop = frac;
+    this.fgClipTop = clipTop;
     this.layout(this.aspect);
   }
 
@@ -245,4 +267,21 @@ export class Diorama {
     if (gm) gm.offset.x += (s / this.ground.scale.x) * gm.repeat.x;
     this.particles.update(dt, t, this.scrollSpeed);
   }
+}
+
+/** Fade the fg layer out above a plane-v line (uniforms set by Diorama.layout). */
+function clipFg(m: THREE.MeshStandardMaterial, u: { uHide: { value: number }; uShow: { value: number } }): void {
+  m.onBeforeCompile = (shader) => {
+    shader.uniforms.uFgHide = u.uHide;
+    shader.uniforms.uFgShow = u.uShow;
+    shader.vertexShader = shader.vertexShader
+      .replace('void main() {', 'varying float vPlaneV;\nvoid main() {\n  vPlaneV = uv.y;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('void main() {', 'uniform float uFgHide;\nuniform float uFgShow;\nvarying float vPlaneV;\nvoid main() {')
+      .replace(
+        '#include <alphatest_fragment>',
+        'diffuseColor.a *= 1.0 - smoothstep(uFgShow, uFgHide, vPlaneV);\n#include <alphatest_fragment>',
+      );
+  };
+  m.customProgramCacheKey = () => 'fg-clip';
 }

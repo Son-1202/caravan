@@ -4,6 +4,13 @@
 import * as THREE from 'three';
 import { makeFigureTexture, makeShadowTexture } from './placeholders';
 import { ease } from './layout';
+import { createOutline, type Outline } from './outline';
+
+/** Hit-flash length in real (wall-clock) ms, independent of hit-stop/slow-mo/pause. */
+export const FLASH_MS = 120;
+const GLOW_COLOR = new THREE.Color('#ff8a3a');
+const BROKEN_TINT = new THREE.Color('#7f9ccf');
+const now = (): number => performance.now();
 
 /** Texture pixels per world unit: a 96 px hero is 1.5 units tall. */
 export const PX_PER_UNIT = 64;
@@ -17,6 +24,8 @@ export interface CombatUnitOpts {
   height: number;
   color: string;
   flipX?: boolean;
+  /** cold rim outline colour (bosses: reads against dark regions) */
+  outline?: string;
 }
 
 let shadowTex: THREE.Texture | null = null;
@@ -45,8 +54,12 @@ export class CombatUnit {
   onLand?: (u: CombatUnit) => void;
   private readonly phase: number;
   private time = 0;
+  /** flash strength at `flashAt` (ms, wall clock); fades to 0 over FLASH_MS */
   private flashK = 0;
+  private flashAt = -Infinity;
   private flashColor = new THREE.Color('#ffffff');
+  private readonly glowEmissive = new THREE.Color('#000000');
+  private readonly outline: Outline | null = null;
   private glowK = 0;
   private lunge: Lunge | null = null;
   private recoilK = 0;
@@ -57,6 +70,7 @@ export class CombatUnit {
   private dissolveT = -1;
   private brokenK = 0;
   private readonly baseColor = new THREE.Color('#ffffff');
+  private readonly tmpColor = new THREE.Color();
 
   constructor(opts: CombatUnitOpts) {
     this.uid = opts.uid;
@@ -78,6 +92,13 @@ export class CombatUnit {
     });
     this.mesh = new THREE.Mesh(geo, mat);
     this.mesh.renderOrder = 2;
+    // the flash is applied right before each draw from the wall clock, so a paused /
+    // frozen / hit-stopped view can never leave a unit stuck as a white silhouette
+    this.mesh.onBeforeRender = () => this.applyFlash();
+    if (opts.outline) {
+      this.outline = createOutline(placeholder, opts.outline);
+      this.mesh.add(this.outline.mesh);
+    }
     shadowTex ??= makeShadowTexture();
     this.shadow = new THREE.Mesh(
       new THREE.PlaneGeometry(1, 1),
@@ -99,6 +120,7 @@ export class CombatUnit {
         this.height = img.height / PX_PER_UNIT;
         mat.map = tex;
         mat.needsUpdate = true;
+        this.outline?.setMap(tex, img.width, img.height);
         placeholder.dispose();
         this.applySize();
       });
@@ -143,8 +165,24 @@ export class CombatUnit {
   }
 
   flash(color: THREE.ColorRepresentation = '#ffffff', k = 1): void {
+    const cur = this.flashLevel();
     this.flashColor.set(color);
-    this.flashK = Math.max(this.flashK, k);
+    this.flashK = Math.max(cur, k);
+    this.flashAt = now();
+  }
+
+  /** Current flash strength (0..1), decaying linearly over FLASH_MS of real time. */
+  flashLevel(t = now()): number {
+    const age = t - this.flashAt;
+    if (age < 0 || age >= FLASH_MS) return 0;
+    return this.flashK * (1 - age / FLASH_MS);
+  }
+
+  private applyFlash(): void {
+    const e = this.mesh.material.emissive;
+    e.copy(this.glowEmissive);
+    const k = this.flashLevel();
+    if (k > 0) e.add(this.tmpColor.copy(this.flashColor).multiplyScalar(k * 1.6));
   }
 
   glow(k = 1): void {
@@ -175,6 +213,7 @@ export class CombatUnit {
     this.mesh.material.opacity = 1;
     this.mesh.material.alphaTest = 0.5;
     this.mesh.material.needsUpdate = true;
+    this.outline?.setFade(1);
   }
 
   /** 0..1 dissolve progress (1 = gone). */
@@ -248,18 +287,17 @@ export class CombatUnit {
 
   private updateMaterial(dt: number): void {
     const m = this.mesh.material;
-    this.flashK = Math.max(0, this.flashK - dt * 6);
     this.glowK = Math.max(0, this.glowK - dt * 1.4);
-    const e = m.emissive;
-    e.copy(this.flashColor).multiplyScalar(this.flashK * 1.6);
-    if (this.glowK > 0) e.add(new THREE.Color('#ff8a3a').multiplyScalar(this.glowK * 1.2));
-    m.color.copy(this.baseColor).lerp(new THREE.Color('#7f9ccf'), this.brokenK * 0.45);
+    this.glowEmissive.copy(GLOW_COLOR).multiplyScalar(this.glowK * 1.2);
+    this.applyFlash();
+    m.color.copy(this.baseColor).lerp(BROKEN_TINT, this.brokenK * 0.45);
     if (this.dissolveT >= 0) {
       this.dissolveT += dt;
       const k = this.dissolveProgress;
       m.color.multiplyScalar(1 - 0.75 * Math.min(1, k * 2));
       m.opacity = 1 - k;
       m.alphaTest = 0.01;
+      this.outline?.setFade(1 - k);
       this.shadow.material.opacity = 0.85 * (1 - k);
       if (k >= 1) {
         this.mesh.visible = false;
@@ -274,6 +312,7 @@ export class CombatUnit {
     this.mesh.geometry.dispose();
     this.mesh.material.map?.dispose();
     this.mesh.material.dispose();
+    this.outline?.dispose();
     this.shadow.geometry.dispose();
     this.shadow.material.dispose();
   }
