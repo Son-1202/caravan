@@ -91,3 +91,29 @@ Sprites: quadrant crop -> magenta key -> trim -> flip if needed -> fit inside 90
 - Two-reference prompting ("art style only" + "layout and framing only") worked for all 13 gens. Keep using it.
 - "facing LEFT" is ignored ~1 in 3 for quadrupeds/insects; flipping in code is free and fine.
 - Fog/breath over magenta leaves pink semi-transparent pixels; use the stricter key + `unpink` pass for any layer with soft fog.
+
+## T-11 — Relic icons, Mira, CGs, parchment map, panel frame (2026-11-23)
+
+Spend: 7 images x 2 cr = **14 credits** (ticket cap 20; balance 148 -> 134). use_unlim false, no folder. No regenerations.
+Full prompts: `docs/art/scripts/prompts_t11.py`. Build: `docs/art/scripts/build_t11.mjs <rawDir>` (raw PNGs named relics.png, mira_sprite.png, mira_portraits.png, cg_twist.png, cg_epilogue.png, map.png, panel.png; reuses `key.mjs`). Contact sheet: `docs/art/scripts/contact_t11.mjs` -> `assets/raw/T-11_contact.jpg`. Raw 2k gens are not kept in the repo (re-download from the job ids).
+
+| Key | Model | Refs | Output | Job ID | Result / post-fix |
+|---|---|---|---|---|---|
+| relics | gpt_image_2_6 high 2k 1:1 | bible | `assets/relics/<id>.png` x16 (128², transparent) | `7eb563e1-0d09-4291-bce1-43d71c07bd10` | Strong; all 16 in order, consistent. GPT ignored the magenta request and returned **native alpha** (clean). Cells cut 4x4, trimmed, fit 120 in 128 canvas. Hourglass glass is semi-transparent. |
+| mira_sprite | nano_banana_pro 2k 1:1 | bible + hero sheet `b38cc065` | `assets/raw/npc/mira_sprite.png` (~308x600) | `822e66a4-0cdd-411a-ae3a-b26179d79b6d` | Mira is good (3/4 view facing right, staff, green shawl), but the gen copied the hero-sheet layout and added Bram/Lysa/Oren. Salvaged: crop, magenta key, flood-fill from a seed on Mira, cleared Oren's censer + pink smoke touching her hem (tiny notch at hem bottom-left). |
+| mira_portraits | nano_banana_pro 2k 16:9 | bible + portrait sheet `42d2780e` | `assets/heroes/mira_portrait.jpg`, `mira_child_portrait.jpg` (512²) | `6dca62fd-fe86-4117-9b06-f101f82eb67d` | Strong; matching vignette/framing to hero portraits; child has white hair, ember eyes, same shawl. 1200² crops per half. |
+| cg_twist | nano_banana_pro 2k 16:9 | bible + hero sheet | `assets/cg/twist.jpg` (1920w) | `a3c8702a-60b1-4597-9521-fe8a92285854` | Strong: aurora, snow pass, Mira dissolving into embers, lantern flame reaching to her, four heroes on the right match their sprites. |
+| cg_epilogue | nano_banana_pro 2k 16:9 | bible | `assets/cg/epilogue.jpg` (1920w) | `07372d1e-1b30-47f7-82b3-32850d32ddf1` | Strong: blazing brazier on the gate, gold light, pink dawn, caravan small bottom-left. |
+| map | nano_banana_pro 2k 16:9 | bible | `assets/ui/map_bg.jpg` (1920w) | `1a8ec8cf-493b-4e2c-bf38-04a3719ea8e5` | Strong; 4 regions L->R, dotted road, burnt edges, no text. Road sits at ~45-50% height; city/brazier top-right. |
+| panel | gpt_image_2_6 high 2k 1:1 | none | `assets/ui/panel_frame.png` (512², keyed) | `f00d6f1e-3fa9-4085-bad6-4d3676bbeda3` | Strong; brass corners ~17% of side, opaque dark-wood centre. 9-slice suggestion: slice ~88 px of 512 (border-image-slice 88). |
+
+### Prompt texts (after style block; full text in prompts_t11.py)
+- relics: "Use the reference image only for art style and warm brass/ember palette... A 4x4 grid sheet of 16 pixel-art item icons... chunky readable silhouette, thick dark outline... Row-major order: 1. a burning branding iron. 2. a heavy brass-clasped warden's cloak... 16. a brass tinderbox with flint and a spark. <magenta bg>"
+- mira_sprite: "<2-ref prefix> Single character sprite, full body, side view facing RIGHT, idle stance... Mira, a kind white-haired old woman wagon driver... green knitted shawl over a simple brown dress, leaning on a gnarled wooden walking staff... No other characters. <magenta bg>"
+- mira_portraits: "<2-ref prefix> Two chest-up character portraits side by side... Left: Mira... Right: the same woman as a young girl of about ten... faintly glowing ember-orange eyes, same green shawl."
+- cg_twist / cg_epilogue / map / panel: see prompts_t11.py.
+
+### Lessons
+- gpt_image_2_6 returns a true transparent background for "icon sheet on magenta" prompts; check the alpha channel before keying.
+- A multi-character sheet as the 2nd ref for a SINGLE sprite makes nano copy the extra characters. For a single sprite, use a single-sprite job as the layout ref (e.g. a boss job like `39fa265e...`), or crop/flood-fill as done here.
+- Relic icon prompts: keep display names out of the prompt (they invite text rendering).
