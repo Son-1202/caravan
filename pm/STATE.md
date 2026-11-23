@@ -3,7 +3,7 @@
 **Phase:** 0 Preflight → 1 Foundation
 **Live URL:** (pending Vercel)
 **Repo:** https://github.com/Son-1202/caravan
-**Credits spent:** 0 / 100
+**Credits spent:** 6 / 100
 
 ## Preflight results
 - gh auth status: FAILED (GH_TOKEN invalid in container). git push via proxy: OK.
@@ -16,7 +16,7 @@
 |---|---|---|---|
 | T-01 | DEV | Scaffold + diorama + post-FX | next |
 | T-02 | CONTENT | GDD + data JSON + story | next |
-| T-03 | ART | 3 key-art candidates | next |
+| T-03 | ART | 3 key-art candidates | done (style bible = B) |
 
 ## Known issues
 - Vercel: user is importing the repo via the dashboard; URL pending.
