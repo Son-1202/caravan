@@ -13,6 +13,7 @@ interface PwPage {
   waitForFunction(fn: string, arg: unknown, o: { timeout: number }): Promise<unknown>;
   evaluate<T>(fn: string): Promise<T>;
   click(sel: string): Promise<void>;
+  mouse: { move(x: number, y: number): Promise<void> };
   screenshot(o: { path: string }): Promise<unknown>;
   on(ev: 'console', cb: (m: { type(): string; text(): string }) => void): void;
   on(ev: 'pageerror', cb: (e: Error) => void): void;
@@ -170,6 +171,8 @@ async function main(): Promise<void> {
     await shot(phone, 'formation-844x390');
     await phone.click('.screen--formation .btn--ember');
     await untilScreen(phone, 'battle');
+    // park the pointer off the HUD so the tap's hover doesn't leave a tooltip open
+    await phone.mouse.move(2, 200);
     await phone.waitForTimeout(5200);
     await shot(phone, 'battle-844x390');
 

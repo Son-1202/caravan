@@ -110,8 +110,12 @@
 .start__seed { position: absolute; right: 12px; bottom: 8px; font-size: 0.75em; opacity: 0.6; }
 
 /* ---------- map ---------- */
-.screen--map { justify-content: flex-start; }
-.map__wrap { width: min(100%, 1100px); flex: 0 1 auto; height: min(58vh, 460px); padding: 6px; margin-top: auto; margin-bottom: 2vh; }
+.screen--map { justify-content: flex-start; padding-bottom: calc(var(--gap) + 1.8em); }
+/* light shade over the marching diorama so panels read while the world stays visible */
+.screen--map, .screen--formation, .screen--camp, .screen--merchant, .screen--event, .screen--reward {
+  background: radial-gradient(ellipse at center, rgba(8, 5, 10, 0.18) 30%, rgba(8, 5, 10, 0.5) 100%);
+}
+.map__wrap { width: min(100%, 1100px); flex: 0 1 auto; height: min(66vh, 540px); padding: 6px; margin: auto 0; }
 .map__board { position: relative; width: 100%; height: 100%; background: center / cover no-repeat; border: 2px solid #6b4a1c; }
 .map__board::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(240, 220, 170, 0.1), rgba(40, 20, 5, 0.45)); }
 .map__lines { position: absolute; inset: 0; width: 100%; height: 100%; }

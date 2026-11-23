@@ -49,7 +49,6 @@ export class CombatHud {
   private clock = 0;
   private itemsKey = '';
   paused = false;
-  private lift = 28;
 
   constructor(parent: HTMLElement, private readonly pos: PosFn, state: BattleSnapshot, private readonly act: HudActions, title: string) {
     for (const u of state.units) this.plates.set(u.uid, this.makePlate(u));
@@ -143,8 +142,8 @@ export class CombatHud {
 
   update(dt: number, s: BattleSnapshot, canIgnite: boolean, consumables: readonly string[]): void {
     this.clock += dt;
-    this.lift = Math.round(Math.min(34, Math.max(20, window.innerHeight * 0.05)));
     const gmax = BALANCE.gauge.max;
+    const placed: Array<{ p: Plate; x: number; y: number }> = [];
     for (const u of s.units) {
       const p = this.plates.get(u.uid);
       if (!p) continue;
@@ -152,9 +151,7 @@ export class CombatHud {
       const vis = !!at && u.alive;
       p.el.style.display = vis ? '' : 'none';
       if (!vis || !at) continue;
-      // heroes stand close together: lift the far-slot plates so neighbours don't overlap
-      const lift = u.side === 'hero' && u.slot === 1 ? this.lift : 0;
-      p.el.style.transform = `translate(${Math.round(at.x)}px, ${Math.round(at.y - lift)}px) translate(-50%, -100%)`;
+      placed.push({ p, x: at.x, y: at.y });
       p.hp.style.width = `${(100 * u.hp) / Math.max(1, u.maxHp)}%`;
       p.atb.style.width = `${Math.min(100, (100 * u.gauge) / gmax)}%`;
       if (u.side === 'hero') p.hpText.textContent = `${Math.ceil(u.hp)}/${u.maxHp}`;
@@ -169,6 +166,7 @@ export class CombatHud {
         p.pips.dataset.tip = `Shield ${u.shield}/${u.maxShield}: at 0 the enemy is Broken`;
       }
     }
+    this.layoutPlates(placed);
     const frac = Math.min(1, s.emberMeter / Math.max(1, s.emberMax));
     this.emberFill.style.width = `${frac * 100}%`;
     this.emberText.textContent = `EMBER ${Math.floor(s.emberMeter)}/${s.emberMax}`;
@@ -180,6 +178,28 @@ export class CombatHud {
       const due = this.pending.filter((f) => f.at <= this.clock);
       this.pending = this.pending.filter((f) => f.at > this.clock);
       for (const f of due) this.spawn(f);
+    }
+  }
+
+  /**
+   * Position plates at their unit anchors, then stagger any that would overlap:
+   * left to right, a plate colliding with an already placed one is lifted above it.
+   * All sizes are read before any transform is written (no layout thrash).
+   */
+  private layoutPlates(placed: Array<{ p: Plate; x: number; y: number }>): void {
+    const boxes = placed
+      .map((e) => ({ ...e, w: e.p.el.offsetWidth, h: e.p.el.offsetHeight, top: 0 }))
+      .sort((a, b) => a.x - b.x);
+    const done: typeof boxes = [];
+    for (const b of boxes) {
+      b.top = b.y - b.h; // plate is anchored by its bottom-centre
+      for (let guard = 0; guard < 6; guard++) {
+        const hit = done.find((o) => Math.abs(o.x - b.x) < (o.w + b.w) / 2 + 2 && b.top < o.top + o.h + 2 && b.top + b.h > o.top - 2);
+        if (!hit) break;
+        b.top = hit.top - b.h - 3;
+      }
+      done.push(b);
+      b.p.el.style.transform = `translate(${Math.round(b.x - b.w / 2)}px, ${Math.round(b.top)}px)`;
     }
   }
 

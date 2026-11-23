@@ -38,7 +38,6 @@ export class App {
   private started = false;
   private eventOutcomeShown = false;
   private storyOpen = false;
-  private regionSet = false;
   private readonly hideTip: () => void;
 
   constructor(readonly ctx: RenderContext, parent: HTMLElement, seed: number) {
@@ -151,9 +150,8 @@ export class App {
   private syncRegion(): void {
     const r = this.run.map[Math.min(this.run.regionIdx, this.run.map.length - 1)];
     const id = r?.region;
-    if (!id || !isRegionId(id) || (this.regionSet && this.ctx.diorama.region.id === id)) return;
-    this.regionSet = true;
-    this.ctx.diorama.setRegion(id);
+    if (!id || !isRegionId(id)) return;
+    if (this.ctx.diorama.region.id !== id) this.ctx.diorama.setRegion(id);
     this.ctx.postfx.setGrade(getRegion(id).grade);
   }
 

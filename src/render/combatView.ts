@@ -71,6 +71,8 @@ export class CombatView {
     if (isRegionId(opts.regionId) && ctx.diorama.region.id !== opts.regionId) ctx.diorama.setRegion(opts.regionId);
     ctx.postfx.setGrade(getRegion(opts.regionId).grade);
     ctx.diorama.setScroll(0);
+    // march mode scrolls the layers; restore the authored framing so the fg stays off the stage
+    ctx.diorama.resetScroll();
     ctx.diorama.setFgDrop(FG_DROP);
     // soft front fill so sprites read against the dusk diorama
     this.fill.position.set(0, 5, 14);

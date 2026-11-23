@@ -1,6 +1,6 @@
 # STATE — single source of truth
 
-**Phase:** 3 Core systems (Phase 2 deploy is waiting on the user's Vercel import)
+**Phase:** 5–6 Content & Polish (deploy still waiting on the user's Vercel import)
 **Live URL:** (pending Vercel)
 **Repo:** https://github.com/Son-1202/caravan
 **Credits spent:** 66 / 100
@@ -22,6 +22,9 @@
 | T-08 | ART | regions 3–4 + enemies + bosses | done |
 | T-10 | CONTENT | balance tuning | done (all B7 PASS) |
 | T-11 | ART | relics, Mira, CG, map, UI frame | done |
+| T-09 | DEV | game flow + UI | done (after T-09-fix) |
+| T-12 | DEV | story, title, end screens, save, audio, mobile | in progress |
+| T-13 | DEV | render juice + polish | in progress |
 | T-02 | CONTENT | GDD + data JSON + story | done |
 | T-03 | ART | 3 key-art candidates | done (style bible = B) |
 

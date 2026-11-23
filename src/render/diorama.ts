@@ -75,7 +75,9 @@ export class Diorama {
     this.root.add(this.dusk, this.dusk.target, this.ambient, this.particles.points, this.actors);
     scene.add(this.root);
     scene.fog = this.fog;
-    this.layout(this.aspect);
+    // Apply the initial region now: until setRegion runs, the layers are untextured
+    // white planes (fg draws over everything) and the frame washes out to beige.
+    this.setRegion(this.region.id);
   }
 
   /** Resize every layer to cover the frustum at its depth (call on resize). */
@@ -193,6 +195,17 @@ export class Diorama {
       const img = tex.image as { width: number; height: number } | undefined;
       if (img && onLoad) onLoad(img);
     });
+  }
+
+  /** Snap every scrolled layer back to its authored framing (battle staging). */
+  resetScroll(): void {
+    for (const l of this.layers) {
+      const map = l.mesh.material.map;
+      if (map) map.offset.x = 0;
+    }
+    const gm = this.ground.material.map;
+    if (gm) gm.offset.x = 0;
+    this.sky.material.uniforms.uScroll.value = 0;
   }
 
   /** World units/sec at the actor plane. Perspective turns it into parallax. */
