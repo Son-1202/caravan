@@ -1,5 +1,5 @@
 {
-  "when": "2026-11-23T12:41:05.549Z",
+  "when": "2026-11-23T13:06:07.731Z",
   "passed": 15,
   "failed": 0,
   "results": [
@@ -66,29 +66,29 @@
     {
       "name": "(b) greedy bot full run, seed 7",
       "ok": true,
-      "info": "lost in 289s (region reached 2)"
+      "info": "lost in 286s (region reached 2)"
     },
     {
       "name": "(b) greedy bot full run, seed 11",
       "ok": true,
-      "info": "won in 378s (region reached 4)"
+      "info": "won in 366s (region reached 4)"
     },
     {
       "name": "(b) a greedy bot run wins within 5 seeds",
       "ok": true,
-      "info": "[{\"seed\":7,\"result\":\"lost\",\"seconds\":289},{\"seed\":11,\"result\":\"won\",\"seconds\":378}]"
+      "info": "[{\"seed\":7,\"result\":\"lost\",\"seconds\":286},{\"seed\":11,\"result\":\"won\",\"seconds\":366}]"
     }
   ],
   "botOutcomes": [
     {
       "seed": 7,
       "result": "lost",
-      "seconds": 289
+      "seconds": 286
     },
     {
       "seed": 11,
       "result": "won",
-      "seconds": 378
+      "seconds": 366
     }
   ],
   "shots": [
