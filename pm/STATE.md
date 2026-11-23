@@ -17,6 +17,9 @@
 | T-01 | DEV | Scaffold + diorama + post-FX | done |
 | T-04 | DEV | src/sim combat + run + tests | done (29 tests) |
 | T-05 | ART | Regions 1–2 + heroes | done |
+| T-06 | DEV | bots + balance harness | done (all bots 99–100% win: too easy) |
+| T-07 | DEV | combat render + pixelize | in progress |
+| T-08 | ART | regions 3–4 + enemies + bosses | in progress |
 | T-02 | CONTENT | GDD + data JSON + story | done |
 | T-03 | ART | 3 key-art candidates | done (style bible = B) |
 
