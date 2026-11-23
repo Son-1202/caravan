@@ -1,14 +1,34 @@
 [
-  { "id": "hearth_broth", "name": "Hearth Broth", "price": 35, "usableIn": ["map", "battle"],
+  {
+    "id": "hearth_broth",
+    "name": "Hearth Broth",
+    "price": 60,
+    "usableIn": ["map", "battle"],
     "description": "A warm bowl from Mira's pot. Heals the party for 30% max HP.",
-    "effect": { "kind": "heal_party", "value": 0.3 } },
-  { "id": "phoenix_feather", "name": "Phoenix Feather", "price": 60, "usableIn": ["map", "battle"],
+    "effect": {"kind": "heal_party", "value": 0.3}
+  },
+  {
+    "id": "phoenix_feather",
+    "name": "Phoenix Feather",
+    "price": 110,
+    "usableIn": ["map", "battle"],
     "description": "Revives one fallen hero at 40% HP.",
-    "effect": { "kind": "revive", "value": 0.4 } },
-  { "id": "bottled_spark", "name": "Bottled Spark", "price": 45, "usableIn": ["battle"],
+    "effect": {"kind": "revive", "value": 0.4}
+  },
+  {
+    "id": "bottled_spark",
+    "name": "Bottled Spark",
+    "price": 50,
+    "usableIn": ["battle"],
     "description": "Feeds the Ember: +50 Ember meter.",
-    "effect": { "kind": "ember_fill", "value": 50 } },
-  { "id": "shatter_salt", "name": "Shatter Salt", "price": 40, "usableIn": ["battle"],
+    "effect": {"kind": "ember_fill", "value": 50}
+  },
+  {
+    "id": "shatter_salt",
+    "name": "Shatter Salt",
+    "price": 45,
+    "usableIn": ["battle"],
     "description": "Thrown crystal salt. Removes 2 shield from every enemy.",
-    "effect": { "kind": "shield_crack", "value": 2 } }
+    "effect": {"kind": "shield_crack", "value": 2}
+  }
 ]

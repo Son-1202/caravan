@@ -6,8 +6,8 @@
     "role": "tank",
     "description": "An old shield-bearer sworn to the caravan. Holy-blessed bulwark who draws blows away from the weak.",
     "defaultRow": "front",
-    "base": { "hp": 260, "atk": 14, "def": 14, "spd": 22, "crit": 0.05 },
-    "basic": { "name": "Oathbash", "kind": "melee", "damageType": "holy", "power": 1.0, "target": "highest_atk_enemy" },
+    "base": {"hp": 300, "atk": 14, "def": 18, "spd": 22, "crit": 0.05},
+    "basic": {"name": "Oathbash", "kind": "melee", "damageType": "holy", "power": 1.0, "target": "highest_atk_enemy"},
     "skill": {
       "id": "stand_fast",
       "name": "Stand Fast",
@@ -16,9 +16,21 @@
       "target": "lowest_hp_ally",
       "cooldown": 2,
       "ranks": [
-        { "power": 0, "status": { "kind": "guard", "chance": 1, "duration": 2, "value": 0.3 }, "selfStatus": { "kind": "taunt", "chance": 1, "duration": 2, "value": 0 } },
-        { "power": 0, "status": { "kind": "guard", "chance": 1, "duration": 2, "value": 0.4 }, "selfStatus": { "kind": "taunt", "chance": 1, "duration": 2, "value": 0 } },
-        { "power": 0, "status": { "kind": "guard", "chance": 1, "duration": 3, "value": 0.5 }, "selfStatus": { "kind": "taunt", "chance": 1, "duration": 3, "value": 0 } }
+        {
+          "power": 0,
+          "status": {"kind": "guard", "chance": 1, "duration": 2, "value": 0.3},
+          "selfStatus": {"kind": "taunt", "chance": 1, "duration": 2, "value": 0}
+        },
+        {
+          "power": 0,
+          "status": {"kind": "guard", "chance": 1, "duration": 2, "value": 0.4},
+          "selfStatus": {"kind": "taunt", "chance": 1, "duration": 2, "value": 0}
+        },
+        {
+          "power": 0,
+          "status": {"kind": "guard", "chance": 1, "duration": 3, "value": 0.5},
+          "selfStatus": {"kind": "taunt", "chance": 1, "duration": 3, "value": 0}
+        }
       ]
     },
     "ultimate": {
@@ -28,13 +40,13 @@
       "kind": "aoe",
       "damageType": "holy",
       "target": "all_enemies",
-      "power": 1.2,
+      "power": 2.0,
       "shieldDmg": 1,
-      "allyStatus": { "kind": "guard", "chance": 1, "duration": 2, "value": 0.4 }
+      "allyStatus": {"kind": "guard", "chance": 1, "duration": 2, "value": 0.4}
     },
     "ai": [
-      { "when": ["skill_ready", "ally_threatened"], "use": "skill", "target": "lowest_hp_ally" },
-      { "when": ["always"], "use": "basic", "target": "highest_atk_enemy" }
+      {"when": ["skill_ready", "ally_threatened"], "use": "skill", "target": "lowest_hp_ally"},
+      {"when": ["always"], "use": "basic", "target": "highest_atk_enemy"}
     ]
   },
   {
@@ -44,8 +56,14 @@
     "role": "archer",
     "description": "A sharp-eyed scout from Whisperpine. Pierce damage that finds weak points and finishes the wounded.",
     "defaultRow": "back",
-    "base": { "hp": 170, "atk": 20, "def": 7, "spd": 28, "crit": 0.1 },
-    "basic": { "name": "Longshot", "kind": "ranged", "damageType": "pierce", "power": 1.0, "target": "weakness_match_enemy" },
+    "base": {"hp": 150, "atk": 20, "def": 5, "spd": 28, "crit": 0.1},
+    "basic": {
+      "name": "Longshot",
+      "kind": "ranged",
+      "damageType": "pierce",
+      "power": 1.0,
+      "target": "weakness_match_enemy"
+    },
     "skill": {
       "id": "pinning_volley",
       "name": "Pinning Volley",
@@ -54,11 +72,7 @@
       "damageType": "pierce",
       "target": "weakness_match_enemy",
       "cooldown": 2,
-      "ranks": [
-        { "power": 0.7, "hits": 2 },
-        { "power": 0.75, "hits": 3 },
-        { "power": 0.85, "hits": 3, "shieldDmg": 1 }
-      ]
+      "ranks": [{"power": 0.7, "hits": 2}, {"power": 0.75, "hits": 3}, {"power": 0.85, "hits": 3, "shieldDmg": 1}]
     },
     "ultimate": {
       "id": "starfall_quiver",
@@ -67,12 +81,12 @@
       "kind": "aoe",
       "damageType": "pierce",
       "target": "all_enemies",
-      "power": 1.6,
+      "power": 2.8,
       "shieldDmg": 1
     },
     "ai": [
-      { "when": ["skill_ready"], "use": "skill", "target": "weakness_match_enemy" },
-      { "when": ["always"], "use": "basic", "target": "weakness_match_enemy" }
+      {"when": ["skill_ready"], "use": "skill", "target": "weakness_match_enemy"},
+      {"when": ["always"], "use": "basic", "target": "weakness_match_enemy"}
     ]
   },
   {
@@ -82,8 +96,8 @@
     "role": "healer",
     "description": "Keeper of the caravan's rites. Mends wounds with hearth-light, or hurls cinders when all are whole.",
     "defaultRow": "back",
-    "base": { "hp": 180, "atk": 16, "def": 8, "spd": 24, "crit": 0.05 },
-    "basic": { "name": "Cinder", "kind": "ranged", "damageType": "fire", "power": 0.9, "target": "weakness_match_enemy" },
+    "base": {"hp": 210, "atk": 16, "def": 12, "spd": 24, "crit": 0.05},
+    "basic": {"name": "Cinder", "kind": "ranged", "damageType": "fire", "power": 0.9, "target": "weakness_match_enemy"},
     "skill": {
       "id": "hearthlight",
       "name": "Hearthlight",
@@ -92,9 +106,9 @@
       "target": "lowest_hp_ally",
       "cooldown": 1,
       "ranks": [
-        { "power": 0, "heal": 2.4 },
-        { "power": 0, "heal": 3.0 },
-        { "power": 0, "heal": 3.4, "status": { "kind": "regen", "chance": 1, "duration": 3, "value": 0.04 } }
+        {"power": 0, "heal": 2.4},
+        {"power": 0, "heal": 3.0},
+        {"power": 0, "heal": 3.4, "status": {"kind": "regen", "chance": 1, "duration": 3, "value": 0.04}}
       ]
     },
     "ultimate": {
@@ -104,13 +118,13 @@
       "kind": "aoe",
       "damageType": "fire",
       "target": "all_enemies",
-      "power": 0.8,
-      "heal": 2.5,
-      "status": { "kind": "burn", "chance": 1, "duration": 3, "value": 0.03 }
+      "power": 1.4,
+      "heal": 4.0,
+      "status": {"kind": "burn", "chance": 1, "duration": 3, "value": 0.03}
     },
     "ai": [
-      { "when": ["skill_ready", "ally_below_half"], "use": "skill", "target": "lowest_hp_ally" },
-      { "when": ["always"], "use": "basic", "target": "weakness_match_enemy" }
+      {"when": ["skill_ready", "ally_below_half"], "use": "skill", "target": "lowest_hp_ally"},
+      {"when": ["always"], "use": "basic", "target": "weakness_match_enemy"}
     ]
   },
   {
@@ -120,8 +134,8 @@
     "role": "rogue",
     "description": "A quick-tongued blade for hire. Crits often, and pounces on anything Broken.",
     "defaultRow": "front",
-    "base": { "hp": 160, "atk": 22, "def": 6, "spd": 32, "crit": 0.25 },
-    "basic": { "name": "Quick Cut", "kind": "melee", "damageType": "slash", "power": 0.9, "target": "broken_enemy" },
+    "base": {"hp": 140, "atk": 22, "def": 4, "spd": 32, "crit": 0.25},
+    "basic": {"name": "Quick Cut", "kind": "melee", "damageType": "slash", "power": 0.9, "target": "broken_enemy"},
     "skill": {
       "id": "ember_fang",
       "name": "Ember Fang",
@@ -131,9 +145,9 @@
       "target": "broken_enemy",
       "cooldown": 2,
       "ranks": [
-        { "power": 0.55, "hits": 3, "status": { "kind": "bleed", "chance": 0.5, "duration": 2, "value": 0.3 } },
-        { "power": 0.65, "hits": 3, "status": { "kind": "bleed", "chance": 0.75, "duration": 2, "value": 0.35 } },
-        { "power": 0.7, "hits": 4, "status": { "kind": "bleed", "chance": 1, "duration": 3, "value": 0.4 } }
+        {"power": 0.55, "hits": 3, "status": {"kind": "bleed", "chance": 0.5, "duration": 2, "value": 0.3}},
+        {"power": 0.65, "hits": 3, "status": {"kind": "bleed", "chance": 0.75, "duration": 2, "value": 0.35}},
+        {"power": 0.7, "hits": 4, "status": {"kind": "bleed", "chance": 1, "duration": 3, "value": 0.4}}
       ]
     },
     "ultimate": {
@@ -143,13 +157,13 @@
       "kind": "melee",
       "damageType": "slash",
       "target": "broken_enemy",
-      "power": 3.5,
+      "power": 6.0,
       "guaranteedCrit": true
     },
     "ai": [
-      { "when": ["skill_ready", "enemy_broken"], "use": "skill", "target": "broken_enemy" },
-      { "when": ["skill_ready"], "use": "skill", "target": "highest_atk_enemy" },
-      { "when": ["always"], "use": "basic", "target": "broken_enemy" }
+      {"when": ["skill_ready", "enemy_broken"], "use": "skill", "target": "broken_enemy"},
+      {"when": ["skill_ready"], "use": "skill", "target": "highest_atk_enemy"},
+      {"when": ["always"], "use": "basic", "target": "broken_enemy"}
     ]
   }
 ]

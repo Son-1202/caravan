@@ -20,7 +20,7 @@
 | T-06 | DEV | bots + balance harness | done (all bots 99–100% win: too easy) |
 | T-07 | DEV | combat render + pixelize | done |
 | T-08 | ART | regions 3–4 + enemies + bosses | done |
-| T-10 | CONTENT | balance tuning | in progress |
+| T-10 | CONTENT | balance tuning | done (all B7 PASS) |
 | T-11 | ART | relics, Mira, CG, map, UI frame | done |
 | T-02 | CONTENT | GDD + data JSON + story | done |
 | T-03 | ART | 3 key-art candidates | done (style bible = B) |
