@@ -8,16 +8,25 @@ import { regionLayerUrl } from './assets';
 import { makeGroundTexture, makeLayerTexture } from './placeholders';
 import { applySky, createSkyMaterial, Particles } from './sky';
 import { CAMERA_BASE, CAMERA_TARGET, frustumAt, verticalFovFor } from './camera';
+import { coverUv } from './layout';
 
 const MARGIN = 1.25; // oversize layers so sway/tilt never shows edges
 const SKY_SCROLL = 0.004; // sky barely moves
-const GROUND = { zNear: 17, zFar: -9, repeat: 6 };
+// ground ends a little behind the stage so painted mid-layer floors show
+const GROUND = { zNear: 17, zFar: -3, repeat: 6 };
 
 interface Layer {
   name: LayerName;
   mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
   width: number;
+  /** aspect of the loaded ART image (0 = procedural placeholder) */
+  imgAspect: number;
 }
+
+/** Vertical crop anchor per painted layer: keep the ground line of mid/fg. */
+const ANCHOR_Y: Record<LayerName, number> = { far: 0.5, mid: 0.1, fg: 0 };
+/** Emissive self-light for painted layers (fg stays darker = silhouette). */
+const PAINT_SELF_LIGHT: Record<LayerName, number> = { far: 0.7, mid: 0.6, fg: 0.35 };
 
 const loader = new THREE.TextureLoader();
 
@@ -33,6 +42,8 @@ export class Diorama {
   private readonly ambient = new THREE.HemisphereLight('#ffffff', '#000000', 0.5);
   private readonly fog = new THREE.Fog('#000000', 20, 60);
   private scrollSpeed = 0;
+  /** Lower the fg layer by this fraction of its height (combat keeps the stage clear). */
+  private fgDrop = 0;
   private aspect = 16 / 9;
 
   constructor(private readonly scene: THREE.Scene) {
@@ -51,7 +62,7 @@ export class Diorama {
         mat.depthWrite = false;
         mesh.renderOrder = 10;
       }
-      this.layers.push({ name, mesh, width: 1 });
+      this.layers.push({ name, mesh, width: 1, imgAspect: 0 });
       this.root.add(mesh);
     }
 
@@ -82,13 +93,22 @@ export class Diorama {
       return w * MARGIN;
     };
     place(this.sky, LAYER_Z.sky);
-    for (const l of this.layers) l.width = place(l.mesh, l.mesh.position.z);
+    for (const l of this.layers) {
+      l.width = place(l.mesh, l.mesh.position.z);
+      if (l.name === 'fg') l.mesh.position.y -= this.fgDrop * l.mesh.scale.y;
+      this.fitLayer(l);
+    }
     const depth = GROUND.zNear - GROUND.zFar;
     const gw = frustumAt(CAMERA_BASE.z - GROUND.zFar, fov, aspect).w * MARGIN;
     this.ground.scale.set(gw, depth, 1);
     this.ground.position.set(0, 0, (GROUND.zNear + GROUND.zFar) / 2);
     const map = this.ground.material.map;
     if (map) map.repeat.set(GROUND.repeat * (gw / depth), GROUND.repeat);
+  }
+
+  setFgDrop(frac: number): void {
+    this.fgDrop = frac;
+    this.layout(this.aspect);
   }
 
   setRegion(id: RegionId): void {
@@ -121,21 +141,57 @@ export class Diorama {
     m.map?.dispose();
     m.map = makeLayerTexture(cfg, l.name);
     m.needsUpdate = true;
+    l.imgAspect = 0;
     const url = regionLayerUrl(cfg.id, l.name);
-    if (url) this.loadInto(m, url, false);
+    m.emissiveMap = null;
+    m.emissive.set('#000000');
+    if (url) {
+      this.loadInto(m, url, false, (img) => {
+        l.imgAspect = img.width / img.height;
+        // painted art carries its own lighting: self-lit so dusk light doesn't crush it
+        m.emissiveMap = m.map;
+        m.emissive.set('#ffffff');
+        m.emissiveIntensity = PAINT_SELF_LIGHT[l.name];
+        m.needsUpdate = true;
+        this.fitLayer(l);
+      });
+    }
   }
 
-  private loadInto(m: THREE.MeshStandardMaterial, url: string, repeatT: boolean): void {
+  /** Cover-crop a painted layer to its plane (keeps image aspect, no stretch). */
+  private fitLayer(l: Layer): void {
+    const map = l.mesh.material.map;
+    if (!map || l.imgAspect <= 0) return;
+    const uv = coverUv(l.mesh.scale.x / l.mesh.scale.y, l.imgAspect, ANCHOR_Y[l.name]);
+    map.repeat.set(uv.repeatX, uv.repeatY);
+    map.offset.y = uv.offsetY;
+    // painted art does not tile vertically; clamp so mip filtering can't bleed
+    map.wrapT = THREE.ClampToEdgeWrapping;
+  }
+
+  private loadInto(
+    m: THREE.MeshStandardMaterial,
+    url: string,
+    repeatT: boolean,
+    onLoad?: (img: { width: number; height: number }) => void,
+  ): void {
     const prev = m.map;
     loader.load(url, (tex) => {
       if (m.map !== prev) return; // region changed meanwhile
       tex.colorSpace = THREE.SRGBColorSpace;
+      // painted backgrounds: smooth + mipmapped (sprites stay Nearest)
+      tex.magFilter = THREE.LinearFilter;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.generateMipmaps = true;
+      tex.anisotropy = 4;
       tex.wrapS = THREE.RepeatWrapping;
       if (repeatT) tex.wrapT = THREE.RepeatWrapping;
       tex.repeat.copy(prev?.repeat ?? tex.repeat);
       m.map = tex;
       m.needsUpdate = true;
       prev?.dispose();
+      const img = tex.image as { width: number; height: number } | undefined;
+      if (img && onLoad) onLoad(img);
     });
   }
 

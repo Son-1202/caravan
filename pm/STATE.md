@@ -18,7 +18,7 @@
 | T-04 | DEV | src/sim combat + run + tests | done (29 tests) |
 | T-05 | ART | Regions 1–2 + heroes | done |
 | T-06 | DEV | bots + balance harness | done (all bots 99–100% win: too easy) |
-| T-07 | DEV | combat render + pixelize | in progress |
+| T-07 | DEV | combat render + pixelize | done |
 | T-08 | ART | regions 3–4 + enemies + bosses | done |
 | T-10 | CONTENT | balance tuning | in progress |
 | T-11 | ART | relics, Mira, CG, map, UI frame | done |
@@ -29,3 +29,4 @@
 - Vercel: user is importing the repo via the dashboard; URL pending.
 - The assets registry (src/render/assets.ts) only globs *.png. Art uses .jpg for opaque layers → extend the glob in T-07.
 - The scripts/pixelize.ts and scripts/balance.ts files are stubs (T-06 and the art pipeline will complete them).
+- Combat ground is a flat untextured plane (large empty brown/dark area). The wagon is a placeholder box. Some enemies face the wrong way (fix: a per-enemy flip table). → T-13 polish.

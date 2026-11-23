@@ -8,6 +8,7 @@ import { PostFX, type Quality } from './render/postfx';
 import { createDemoCast } from './render/demoScene';
 import { REGION_IDS, getRegion, isRegionId, type RegionId } from './render/regions';
 import { DemoHud } from './ui/hud';
+import { startCombatDemo, type CombatDemo } from './render/devCombatDemo';
 
 // Query params (demo/QA): ?region=frostspire&quality=high|low&scroll=1.5
 const params = new URLSearchParams(location.search);
@@ -27,8 +28,10 @@ app.append(renderer.domElement);
 const scene = new THREE.Scene();
 const cam = new DioramaCamera(window.innerWidth / window.innerHeight);
 const diorama = new Diorama(scene);
-const cast = createDemoCast(diorama.actors);
 const postfx = new PostFX(renderer, scene, cam.camera);
+// ?demo=combat runs a real seeded sim battle through CombatView (T-07)
+const combatMode = params.get('demo') === 'combat';
+const cast = combatMode ? null : createDemoCast(diorama.actors);
 const hud = new DemoHud(app);
 
 const forcedQuality = params.get('quality');
@@ -52,7 +55,13 @@ function setRegion(id: RegionId): void {
 const startRegion = params.get('region') ?? 'whisperpine';
 setRegion(isRegionId(startRegion) ? startRegion : 'whisperpine');
 
-const baseScroll = Number(params.get('scroll') ?? 1.2);
+let combat: CombatDemo | null = null;
+if (combatMode) {
+  combat = startCombatDemo({ renderer, scene, cam, diorama, postfx }, params);
+  hud.setRegion(`${getRegion(diorama.region.id).name} · combat demo`);
+}
+
+const baseScroll = combatMode ? 0 : Number(params.get('scroll') ?? 1.2);
 let scrolling = true;
 diorama.setScroll(baseScroll);
 
@@ -64,7 +73,7 @@ window.addEventListener('keydown', (e) => {
     postfx.setQuality(postfx.quality === 'high' ? 'low' : 'high');
   } else if (e.key === 'c' || e.key === 'C') {
     postfx.pulseChromatic();
-    cast.ember.surge = 1;
+    if (cast) cast.ember.surge = 1;
   } else if (e.key === ' ') {
     scrolling = !scrolling;
     diorama.setScroll(scrolling ? baseScroll : 0);
@@ -78,21 +87,24 @@ function onResize(): void {
   cam.setAspect(w / h);
   diorama.layout(w / h);
   postfx.setSize(w, h);
+  combat?.view.onResize();
 }
 window.addEventListener('resize', onResize);
 onResize();
 
-window.__debug = { scene, diorama, postfx, setRegion, renderer };
+window.__debug = { scene, diorama, postfx, setRegion, renderer, combat };
 
 let last = performance.now();
 let elapsed = 0;
 function frame(now: number): void {
-  const dt = Math.min((now - last) / 1000, 0.1);
+  const dtRaw = Math.min((now - last) / 1000, 0.1);
   last = now;
+  combat?.update(dtRaw);
+  const dt = combat?.frozen ? 0 : dtRaw;
   elapsed += dt;
   cam.update(elapsed);
   diorama.update(dt, elapsed);
-  cast.update(elapsed, dt);
+  cast?.update(elapsed, dt);
   postfx.render(dt);
   requestAnimationFrame(frame);
 }
