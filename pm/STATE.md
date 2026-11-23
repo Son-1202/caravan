@@ -19,4 +19,4 @@
 | T-03 | ART | 3 key-art candidates | next |
 
 ## Known issues
-- Vercel not authenticated.
+- Vercel: user is importing the repo via the dashboard; URL pending.
