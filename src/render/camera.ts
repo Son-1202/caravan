@@ -10,6 +10,8 @@ export class DioramaCamera {
   swayAmount = 1;
   /** Extra positional offset (camera shake), set each frame by effects. */
   readonly shake = new THREE.Vector3();
+  /** Extra roll (radians) from camera shake. */
+  roll = 0;
 
   constructor(aspect: number) {
     this.camera = new THREE.PerspectiveCamera(verticalFovFor(aspect), aspect, 0.1, 200);
@@ -36,6 +38,7 @@ export class DioramaCamera {
     );
     this.camera.position.add(this.shake);
     this.camera.lookAt(CAMERA_TARGET.x + Math.sin(t * 0.13) * 0.05 * a, CAMERA_TARGET.y, CAMERA_TARGET.z);
+    if (this.roll !== 0) this.camera.rotateZ(this.roll);
   }
 }
 

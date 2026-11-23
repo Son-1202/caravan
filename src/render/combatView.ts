@@ -8,9 +8,10 @@ import type { BattleSnapshot, Formation, SimEvent, UnitSnapshot } from '../sim';
 import { getRegion, isRegionId } from './regions';
 import type { RenderContext } from './context';
 import { CombatUnit, PX_PER_UNIT } from './combatUnit';
-import { Bursts } from './fx/bursts';
-import { ashDissolve, healMotes, impactSparks } from './fx/presets';
-import { FlashLights, Projectiles, ScreenFlash } from './fx/effects';
+import { landingDust } from './fx/presets';
+import { Projectiles } from './fx/effects';
+import { CombatFx, DMG_COLOR, type CombatCue, type CombatFxHost } from './combatFx';
+import { shouldFlip } from './facing';
 import { actionInfo, enemyTier, TIER_PX, type ActionInfo } from './actionInfo';
 import { heroSlot, stagePosition, STAGE } from './layout';
 import { spriteUrl } from './assets';
@@ -20,10 +21,10 @@ export interface CombatViewOpts {
   regionId: string;
 }
 
-const DMG_COLOR: Record<string, string> = { slash: '#fff1d6', pierce: '#d8f0ff', fire: '#ff8a3a', holy: '#ffe27a' };
 const HERO_COLORS: Record<string, string> = { bram: '#9aa7b8', kit: '#c08a4a', lysa: '#4f7a3a', oren: '#8e2f2f' };
-const SLOWMO = { scale: 0.3, real: 0.4, visual: 0.35 };
 const ULT_STAGGER = 0.5;
+/** ultimate VFX lead (s before the impact) */
+const ULT_LEAD: Record<string, number> = { bram: 0.12, lysa: 0.42, oren: 0.15, kit: 0 };
 const WINDUP = 0.12;
 /** fraction of the fg layer pushed below frame so it never covers the units */
 const FG_DROP = 0.3;
@@ -36,30 +37,27 @@ interface Pending {
   started: boolean;
   impactAt: number;
   hits: number;
+  /** hero defId when this action is an Ignite ultimate */
+  ult?: string;
 }
 
-export class CombatView {
+export class CombatView implements CombatFxHost {
   readonly root = new THREE.Group();
-  /** Suggested sim speed: 0.3 during Break slow-mo, 0 while the Ignite cinematic plays. */
+  /** Suggested sim speed: 0 during hit-stop and the Ignite cinematic, 0.25..1 during Break slow-mo. */
   timeScale = 1;
   /** Optional hook fired when a visual beat starts (QA / audio / UI sync). */
-  onCue?: (cue: 'attack' | 'impact' | 'break' | 'ignite' | 'death', uid: string, side: 'hero' | 'enemy' | null) => void;
+  onCue?: (cue: CombatCue, uid: string, side: 'hero' | 'enemy' | null) => void;
   private readonly units = new Map<string, CombatUnit>();
   private readonly snap = new Map<string, UnitSnapshot>();
-  private readonly bursts = new Bursts();
-  private readonly lights = new FlashLights();
-  private readonly projectiles = new Projectiles(this.lights);
-  private readonly flash: ScreenFlash;
+  private readonly fx: CombatFx;
   private readonly wagon: Wagon;
+  private readonly dust: string;
   private queue: Array<{ at: number; fn: () => void }> = [];
   private readonly pending = new Map<string, Pending>();
-  /** visual clock (s) */
-  private now = 0;
-  private busyUntil = 0;
-  private igniteUntil = 0;
-  private slowLeft = 0;
-  private shakeK = 0;
-  private shakeT = 0;
+  /** visual clock (s); CombatFxHost state shared with the reactions */
+  now = 0;
+  busyUntil = 0;
+  igniteUntil = 0;
   private readonly fill = new THREE.DirectionalLight('#ffe2c4', 1.1);
   private readonly tmp = new THREE.Vector3();
   private readonly tmp2 = new THREE.Vector3();
@@ -78,12 +76,19 @@ export class CombatView {
     this.fill.position.set(0, 5, 14);
     this.root.add(this.fill, this.fill.target);
     if (!ctx.cam.camera.parent) ctx.scene.add(ctx.cam.camera);
-    this.flash = new ScreenFlash(ctx.cam.camera);
+    this.dust = '#' + new THREE.Color(getRegion(opts.regionId).layers.ground).lerp(new THREE.Color('#d8c8b0'), 0.35).getHexString();
     this.wagon = createWagon();
+    this.wagon.speed = 0; // parked during battle
     this.wagon.group.position.set(STAGE.wagon.x, 0, STAGE.wagon.z);
-    this.root.add(this.wagon.group, this.bursts.points, this.lights.group, this.projectiles.group);
+    this.fx = new CombatFx(ctx, this, this.units, this.wagon);
+    this.root.add(this.wagon.group, this.fx.group);
     ctx.diorama.actors.add(this.root);
     this.onResize();
+  }
+
+  /** March preview (QA): let the wagon wheels follow the diorama scroll instead of parking. */
+  setMarching(on: boolean): void {
+    this.wagon.speed = on ? null : 0;
   }
 
   get busy(): boolean {
@@ -104,7 +109,16 @@ export class CombatView {
       const { tier, big } = s.side === 'enemy' ? enemyTier(s.defId) : { tier: 'normal', big: false };
       const h = (TIER_PX[tier] ?? 96) / PX_PER_UNIT;
       const url = spriteUrl(`${s.side === 'hero' ? 'heroes' : 'enemies'}/${s.defId}`);
-      const unit = new CombatUnit({ uid: s.uid, side: s.side, url, width: h * 0.7, height: h, color: HERO_COLORS[s.defId] ?? '#4a4a5e' });
+      const unit = new CombatUnit({
+        uid: s.uid,
+        side: s.side,
+        url,
+        width: h * 0.7,
+        height: h,
+        color: HERO_COLORS[s.defId] ?? '#4a4a5e',
+        flipX: shouldFlip(s.side, s.defId),
+      });
+      unit.onLand = (u) => landingDust(this.fx.bursts, u.worldPoint(0, this.tmp2), this.dust, u.width);
       const p = stagePosition(s.side, row, slot, big);
       unit.group.position.set(p.x, 0, p.z);
       if (!s.alive) unit.dissolve();
@@ -141,8 +155,9 @@ export class CombatView {
           const s = this.snap.get(e.actor);
           if (!s) break;
           const t = cursor;
-          this.pending.set(e.actor, { info: actionInfo(s.side, s.defId, e.skill), at: t + 0.3, started: false, impactAt: t + 0.3, hits: 0 });
-          this.at(t, () => this.ultimateWindup(e.actor));
+          const ult = s.side === 'hero' ? s.defId : undefined;
+          this.pending.set(e.actor, { info: actionInfo(s.side, s.defId, e.skill), at: t + 0.3, started: false, impactAt: t + 0.3, hits: 0, ult });
+          this.at(t, () => this.fx.ultimateWindup(e.actor));
           cursor += ULT_STAGGER;
           break;
         }
@@ -154,32 +169,32 @@ export class CombatView {
         }
         case 'break': {
           const t = (lastHitOn.get(e.target) ?? cursor) + 0.02;
-          this.at(t, () => this.onBreak(e.target));
+          this.at(t, () => this.fx.onBreak(e.target));
           break;
         }
         case 'recover':
-          this.at(cursor, () => this.onRecover(e.target));
+          this.at(cursor, () => this.fx.onRecover(e.target));
           break;
         case 'heal': {
           const t = Math.max(cursor, impactOf(e.source)) + 0.12;
-          this.at(t, () => this.onHeal(e.target));
+          this.at(t, () => this.fx.onHeal(e.target));
           break;
         }
         case 'death': {
           const t = (lastHitOn.get(e.target) ?? lastImpact) + 0.18;
-          this.at(t, () => this.onDeath(e.target));
+          this.at(t, () => this.fx.onDeath(e.target));
           break;
         }
         case 'revive':
-          this.at(cursor, () => this.onRevive(e.target));
+          this.at(cursor, () => this.fx.onRevive(e.target));
           break;
         case 'ignite':
-          this.at(cursor, () => this.onIgnite());
+          this.at(cursor, () => this.fx.onIgnite());
           this.igniteUntil = Math.max(this.igniteUntil, cursor + 0.6);
           cursor += 0.45;
           break;
         case 'phase':
-          this.at(Math.max(cursor, lastImpact) + 0.1, () => this.onPhase(e.target));
+          this.at(Math.max(cursor, lastImpact) + 0.1, () => this.fx.onPhase(e.target));
           break;
         case 'end':
           if (e.outcome === 'win') {
@@ -207,7 +222,7 @@ export class CombatView {
     const p = this.pending.get(src);
     if (!target) return cursor;
     if (dot || !attacker || !p) {
-      this.at(cursor, () => this.onImpact(tgt, null, dmgType, false, false, true));
+      this.at(cursor, () => this.fx.onImpact(tgt, null, dmgType, false, false, true));
       return cursor;
     }
     let t: number;
@@ -226,16 +241,20 @@ export class CombatView {
         if (style === 'melee') attacker.lungeTo(tu.home);
         else attacker.flash(DMG_COLOR[dmgType] ?? '#ffffff', 0.35);
       });
-      if (style !== 'melee') this.at(start + WINDUP, () => this.launchIfAlive(style, attacker, tgt));
+      // ultimates replace the plain projectile with the hero's own VFX
+      if (p.ult) {
+        const who = p.ult;
+        this.at(p.impactAt - (ULT_LEAD[who] ?? 0), () => this.fx.playUltimate(who, attacker, tgt));
+      } else if (style !== 'melee') this.at(start + WINDUP, () => this.launchIfAlive(style, attacker, tgt));
       t = p.impactAt;
     } else {
       // extra targets / extra hits of the same action
       p.hits++;
       t = p.impactAt + p.hits * (style === 'melee' ? 0.09 : 0.05);
-      if (style !== 'melee') this.at(t - (p.impactAt - p.at - WINDUP), () => this.launchIfAlive(style, attacker, tgt));
+      if (style !== 'melee' && !p.ult) this.at(t - (p.impactAt - p.at - WINDUP), () => this.launchIfAlive(style, attacker, tgt));
     }
     const fromX = attacker.home.x;
-    this.at(t, () => this.onImpact(tgt, fromX, dmgType, crit, weak, false));
+    this.at(t, () => this.fx.onImpact(tgt, fromX, dmgType, crit, weak, false));
     return t;
   }
 
@@ -244,117 +263,18 @@ export class CombatView {
     if (!to || !from.alive) return;
     const a = from.worldPoint(0.55, new THREE.Vector3());
     const b = to.worldPoint(0.5, new THREE.Vector3());
-    this.projectiles.launch(style, a, b);
+    this.fx.projectiles.launch(style, a, b);
   }
 
   private at(t: number, fn: () => void): void {
     this.queue.push({ at: t, fn });
   }
 
-  // ---------- reactions ----------
-  private onImpact(uid: string, fromX: number | null, dmgType: string, crit: boolean, weak: boolean, dot: boolean): void {
-    const u = this.units.get(uid);
-    if (!u) return;
-    const c = DMG_COLOR[dmgType] ?? '#ffffff';
-    const p = u.worldPoint(0.5, this.tmp2);
-    if (dot) {
-      u.flash(c, 0.4);
-      this.bursts.burst({ pos: p, count: 6, color: c, hdr: 1.5, speed: 0.8, life: 0.5, size: 0.08, drift: new THREE.Vector3(0, 0.8, 0) });
-      return;
-    }
-    u.flash('#ffffff', 1);
-    this.onCue?.('impact', uid, u.side);
-    if (fromX !== null) u.recoil(fromX);
-    impactSparks(this.bursts, p, c, crit, weak);
-    if (crit) {
-      this.ctx.postfx.pulseChromatic(0.004, 0.2);
-      this.shake(0.12);
-    }
-  }
-
-  private onBreak(uid: string): void {
-    const u = this.units.get(uid);
-    if (!u) return;
-    u.setBroken(true);
-    u.flash('#cfe8ff', 1);
-    this.onCue?.('break', uid, u.side);
-    const p = u.worldPoint(0.55, this.tmp2);
-    this.bursts.burst({ pos: p, count: 46, color: '#a8dcff', hdr: 3, speed: 6, gravity: 7, drag: 2, life: 0.9, size: 0.1, soft: 0, radius: 0.35, zScale: 0.7 });
-    this.bursts.burst({ pos: p, count: 18, color: '#ffffff', hdr: 4, speed: 3, life: 0.35, size: 0.16, radius: 0.2 });
-    this.flash.flash('#dff0ff', 0.3, 0.25);
-    this.ctx.postfx.pulseChromatic(0.012, 0.45);
-    this.lights.fire(p, '#9fd4ff', 24, 0.4);
-    this.shake(0.25);
-    this.slowLeft = SLOWMO.real;
-    this.busyUntil = Math.max(this.busyUntil, this.now + SLOWMO.real * SLOWMO.visual);
-  }
-
-  private onRecover(uid: string): void {
-    const u = this.units.get(uid);
-    if (!u) return;
-    u.setBroken(false);
-    this.bursts.burst({ pos: u.worldPoint(0.5, this.tmp2), count: 14, color: '#8fc8ff', hdr: 2, speed: 1, life: 0.6, size: 0.08, drift: new THREE.Vector3(0, 0.6, 0) });
-  }
-
-  private onHeal(uid: string): void {
-    const u = this.units.get(uid);
-    if (!u || !u.alive) return;
-    u.flash('#b8ff9a', 0.35);
-    healMotes(this.bursts, u);
-  }
-
-  private onDeath(uid: string): void {
-    const u = this.units.get(uid);
-    if (!u || !u.alive) return;
-    u.dissolve();
-    this.onCue?.('death', uid, u.side);
-    ashDissolve(this.bursts, u);
-    this.bursts.burst({ pos: u.worldPoint(0.4, this.tmp2), count: 10, color: '#ff7a30', hdr: 2.5, speed: 0.6, drift: new THREE.Vector3(0, 1, 0), life: 1.2, size: 0.05 });
-  }
-
-  private onRevive(uid: string): void {
-    const u = this.units.get(uid);
-    if (!u) return;
-    u.revive();
-    u.flash('#ffd27a', 1);
-    this.onHeal(uid);
-  }
-
-  private onIgnite(): void {
-    this.flash.flash('#ffb060', 0.8, 0.7);
-    this.onCue?.('ignite', '', null);
-    this.wagon.ember.surge = 1;
-    this.ctx.postfx.pulseChromatic(0.008, 0.6);
-    this.lights.fire(this.wagon.ember.group.getWorldPosition(new THREE.Vector3()), '#ff9a3c', 60, 1.2);
-    this.shake(0.15);
-  }
-
-  private ultimateWindup(uid: string): void {
-    const u = this.units.get(uid);
-    if (!u || !u.alive) return;
-    u.jump(0.55);
-    u.glow(1);
-    this.bursts.burst({ pos: u.home, box: new THREE.Vector3(u.width * 0.5, u.height, 0.2), count: 22, color: '#ff9a3c', hdr: 3, speed: 0.6, drift: new THREE.Vector3(0, 1.6, 0), life: 0.8, size: 0.08 });
-  }
-
-  private onPhase(uid: string): void {
-    this.flash.darkPulse(0.55, 0.7);
-    this.shake(0.5);
-    const u = this.units.get(uid);
-    if (!u) return;
-    u.flash('#ff2a2a', 1);
-    this.bursts.burst({ pos: u.worldPoint(0.5, this.tmp2), count: 30, color: '#7a1030', hdr: 1.5, speed: 3, drag: 2, life: 0.9, size: 0.14 });
-  }
-
-  private shake(k: number): void {
-    this.shakeK = Math.max(this.shakeK, k);
-  }
-
   // ---------- frame ----------
   update(dtReal: number): void {
-    const slow = this.slowLeft > 0;
-    this.slowLeft = Math.max(0, this.slowLeft - dtReal);
-    const dt = dtReal * (slow ? SLOWMO.visual : 1);
+    // hit-stop (factor 0) freezes the hit sprites, VFX and the sim; slow-mo scales both
+    const f = this.fx.warp.update(dtReal);
+    const dt = dtReal * f;
     this.now += dt;
     if (this.queue.length) {
       const due = this.queue.filter((q) => q.at <= this.now).sort((a, b) => a.at - b.at);
@@ -363,34 +283,22 @@ export class CombatView {
         for (const q of due) q.fn();
       }
     }
-    this.timeScale = this.now < this.igniteUntil ? 0 : slow ? SLOWMO.scale : 1;
+    this.timeScale = this.now < this.igniteUntil ? 0 : f;
     for (const u of this.units.values()) u.update(dt);
     this.wagon.update(this.now, dt);
-    this.bursts.update(dt);
-    this.lights.update(dt);
-    this.projectiles.update(dt);
-    this.flash.update(dtReal);
-    // camera shake (decays in real time)
-    this.shakeT += dtReal;
-    this.shakeK = Math.max(0, this.shakeK - dtReal * 1.6);
-    const k = this.shakeK * this.shakeK;
-    this.ctx.cam.shake.set(Math.sin(this.shakeT * 61) * 0.35 * k, Math.sin(this.shakeT * 47 + 1) * 0.25 * k, 0);
+    this.fx.update(dt, dtReal);
   }
 
   onResize(): void {
-    const el = this.ctx.renderer.domElement;
-    this.bursts.setViewport(el.clientHeight || window.innerHeight, this.ctx.cam.camera.fov);
+    this.fx.onResize();
   }
 
   dispose(): void {
     for (const u of this.units.values()) u.dispose();
     this.units.clear();
     this.queue = [];
-    this.flash.dispose();
-    this.bursts.dispose();
-    this.projectiles.dispose();
+    this.fx.dispose();
     this.wagon.dispose();
-    this.ctx.cam.shake.set(0, 0, 0);
     this.ctx.diorama.setFgDrop(0);
     this.ctx.diorama.actors.remove(this.root);
   }

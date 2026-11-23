@@ -18,8 +18,9 @@ import {
   VignetteEffect,
 } from 'postprocessing';
 import type { ColorGrade } from './regions';
+import { renderQuality, type Quality } from './quality';
 
-export type Quality = 'high' | 'low';
+export type { Quality } from './quality';
 
 const FPS_FLOOR = 45;
 const FPS_WINDOW = 3; // seconds under the floor before dropping
@@ -77,12 +78,14 @@ export class PostFX {
     this.composer.removeAllPasses();
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     const high = this.quality === 'high';
-    this.tiltShift.blurPass.kernelSize = high ? KernelSize.LARGE : KernelSize.SMALL;
-    this.tiltShift.resolution.scale = high ? 0.5 : 0.25;
+    renderQuality.level = this.quality;
+    this.tiltShift.blurPass.kernelSize = KernelSize.LARGE;
+    this.tiltShift.resolution.scale = 0.5;
     // Convolution effects (tilt-shift blur, bloom) can't share a pass with
     // each other or with chromatic aberration; split accordingly.
-    this.composer.addPass(new EffectPass(this.camera, this.tiltShift));
+    // Low: no DoF (tilt-shift), no grain, no chromatic aberration.
     if (high) {
+      this.composer.addPass(new EffectPass(this.camera, this.tiltShift));
       this.composer.addPass(new EffectPass(this.camera, this.bloom, this.hueSat, this.brightCon, this.vignette, this.noise));
       this.composer.addPass(new EffectPass(this.camera, this.chroma));
     } else {

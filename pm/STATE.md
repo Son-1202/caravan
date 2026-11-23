@@ -24,7 +24,7 @@
 | T-11 | ART | relics, Mira, CG, map, UI frame | done |
 | T-09 | DEV | game flow + UI | done (after T-09-fix) |
 | T-12 | DEV | story, title, end screens, save, audio, mobile | in progress |
-| T-13 | DEV | render juice + polish | in progress |
+| T-13 | DEV | render juice + polish | done |
 | T-02 | CONTENT | GDD + data JSON + story | done |
 | T-03 | ART | 3 key-art candidates | done (style bible = B) |
 
@@ -33,3 +33,4 @@
 - The assets registry (src/render/assets.ts) only globs *.png. Art uses .jpg for opaque layers → extend the glob in T-07.
 - The scripts/pixelize.ts and scripts/balance.ts files are stubs (T-06 and the art pipeline will complete them).
 - Combat ground is a flat untextured plane (large empty brown/dark area). The wagon is a placeholder box. Some enemies face the wrong way (fix: a per-enemy flip table). → T-13 polish.
+- 60 fps can't be verified in this container: headless Chromium uses SwiftShader, a software GPU (about 600 ms per frame). It needs a real-GPU check; the quality auto-drop is the safety net.

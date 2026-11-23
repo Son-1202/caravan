@@ -5,15 +5,17 @@
 import * as THREE from 'three';
 import { LAYER_Z, getRegion, type LayerName, type RegionConfig, type RegionId } from './regions';
 import { regionLayerUrl } from './assets';
-import { makeGroundTexture, makeLayerTexture } from './placeholders';
-import { applySky, createSkyMaterial, Particles } from './sky';
+import { makeLayerTexture } from './placeholders';
+import { GROUND_SELF_LIGHT, GroundDressing, makeRegionGroundTexture } from './ground';
+import { applySky, createSkyMaterial } from './sky';
+import { addHeatHaze, hazeUniforms, Particles } from './ambient';
 import { CAMERA_BASE, CAMERA_TARGET, frustumAt, verticalFovFor } from './camera';
 import { coverUv } from './layout';
 
 const MARGIN = 1.25; // oversize layers so sway/tilt never shows edges
 const SKY_SCROLL = 0.004; // sky barely moves
 // ground ends a little behind the stage so painted mid-layer floors show
-const GROUND = { zNear: 17, zFar: -3, repeat: 6 };
+const GROUND = { zNear: 17, zFar: -3, repeat: 3 };
 
 interface Layer {
   name: LayerName;
@@ -30,6 +32,12 @@ const PAINT_SELF_LIGHT: Record<LayerName, number> = { far: 0.7, mid: 0.6, fg: 0.
 
 const loader = new THREE.TextureLoader();
 
+/** Last scroll speed set on any diorama (march mode); props like the wagon wheels follow it. */
+let liveScroll = 0;
+export function currentScrollSpeed(): number {
+  return liveScroll;
+}
+
 export class Diorama {
   readonly root = new THREE.Group();
   readonly actors = new THREE.Group();
@@ -38,6 +46,7 @@ export class Diorama {
   private readonly layers: Layer[] = [];
   private readonly ground: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
   private readonly particles = new Particles();
+  private readonly dressing = new GroundDressing();
   private readonly dusk = new THREE.DirectionalLight('#ffffff', 1);
   private readonly ambient = new THREE.HemisphereLight('#ffffff', '#000000', 0.5);
   private readonly fog = new THREE.Fog('#000000', 20, 60);
@@ -56,6 +65,7 @@ export class Diorama {
       const mat = new THREE.MeshStandardMaterial({ transparent: true, alphaTest: 0.02, roughness: 1, depthWrite: true });
       const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
       mesh.position.z = LAYER_Z[name];
+      if (name === 'far') addHeatHaze(mat);
       if (name === 'fg') {
         // fg sits in front of the ground strip; draw it last, over everything
         mat.depthTest = false;
@@ -69,7 +79,8 @@ export class Diorama {
     const gMat = new THREE.MeshStandardMaterial({ roughness: 1 });
     this.ground = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), gMat);
     this.ground.rotation.x = -Math.PI / 2;
-    this.root.add(this.ground);
+    this.dressing.patch(gMat);
+    this.root.add(this.ground, this.dressing.group);
 
     this.dusk.position.set(-6, 10, 8);
     this.root.add(this.dusk, this.dusk.target, this.ambient, this.particles.points, this.actors);
@@ -106,6 +117,7 @@ export class Diorama {
     this.ground.position.set(0, 0, (GROUND.zNear + GROUND.zFar) / 2);
     const map = this.ground.material.map;
     if (map) map.repeat.set(GROUND.repeat * (gw / depth), GROUND.repeat);
+    this.dressing.layout(gw, GROUND.zFar, GROUND.zNear);
   }
 
   setFgDrop(frac: number): void {
@@ -120,7 +132,10 @@ export class Diorama {
     for (const l of this.layers) this.setLayerTexture(l, cfg);
     const gm = this.ground.material;
     gm.map?.dispose();
-    gm.map = makeGroundTexture(cfg);
+    gm.map = makeRegionGroundTexture(cfg);
+    gm.emissiveMap = gm.map;
+    gm.emissive.set('#ffffff');
+    gm.emissiveIntensity = GROUND_SELF_LIGHT[cfg.id];
     gm.needsUpdate = true;
     const groundUrl = regionLayerUrl(cfg.id, 'ground');
     if (groundUrl) this.loadInto(gm, groundUrl, true);
@@ -136,6 +151,8 @@ export class Diorama {
     this.fog.far = cfg.fog.far;
     this.scene.background = new THREE.Color(cfg.sky.top);
     this.particles.apply(cfg);
+    this.dressing.apply(cfg);
+    hazeUniforms.uHaze.value = cfg.particles.kind === 'sand' ? 1 : 0;
   }
 
   private setLayerTexture(l: Layer, cfg: RegionConfig): void {
@@ -211,12 +228,14 @@ export class Diorama {
   /** World units/sec at the actor plane. Perspective turns it into parallax. */
   setScroll(speed: number): void {
     this.scrollSpeed = speed;
+    liveScroll = speed;
   }
 
   update(dt: number, t: number): void {
     const s = this.scrollSpeed * dt;
     const skyU = this.sky.material.uniforms;
     skyU.uTime.value = t;
+    hazeUniforms.uHazeTime.value = t;
     skyU.uScroll.value += s * SKY_SCROLL;
     for (const l of this.layers) {
       const map = l.mesh.material.map;

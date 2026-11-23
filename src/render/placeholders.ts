@@ -181,35 +181,6 @@ export function makeLayerTexture(cfg: RegionConfig, layer: LayerName): THREE.Can
   return toTexture(c);
 }
 
-export function makeGroundTexture(cfg: RegionConfig): THREE.CanvasTexture {
-  const S = 256;
-  const [c, ctx] = canvas(S, S);
-  const rng = mulberry32(hashString(`${cfg.id}:ground`));
-  ctx.fillStyle = cfg.layers.ground;
-  ctx.fillRect(0, 0, S, S);
-  for (let i = 0; i < 900; i++) {
-    const v = rng();
-    ctx.fillStyle = v > 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.12)';
-    ctx.fillRect(Math.floor(rng() * S), Math.floor(rng() * S), 2 + Math.floor(rng() * 4), 2);
-  }
-  const t = toTexture(c);
-  t.wrapT = THREE.RepeatWrapping;
-  t.magFilter = THREE.NearestFilter;
-  return t;
-}
-
-/** Soft round dot for particles. */
-export function makeDotTexture(): THREE.CanvasTexture {
-  const [c, ctx] = canvas(32, 32);
-  const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-  g.addColorStop(0, 'rgba(255,255,255,1)');
-  g.addColorStop(0.4, 'rgba(255,255,255,0.5)');
-  g.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, 32, 32);
-  return toTexture(c, false);
-}
-
 /** Radial blob shadow. */
 export function makeShadowTexture(): THREE.CanvasTexture {
   const [c, ctx] = canvas(64, 64);

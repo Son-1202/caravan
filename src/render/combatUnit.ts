@@ -41,6 +41,8 @@ export class CombatUnit {
   height: number;
   alive = true;
   broken = false;
+  /** Fired when the unit lands (end of a lunge or jump): dust puffs etc. */
+  onLand?: (u: CombatUnit) => void;
   private readonly phase: number;
   private time = 0;
   private flashK = 0;
@@ -130,6 +132,11 @@ export class CombatUnit {
     return dur * 0.42;
   }
 
+  private land(): void {
+    this.squashK = 1;
+    if (this.alive) this.onLand?.(this);
+  }
+
   recoil(fromX: number): void {
     this.recoilDir = Math.sign(this.group.position.x - fromX) || (this.side === 'hero' ? -1 : 1);
     this.recoilK = 1;
@@ -197,7 +204,7 @@ export class CombatUnit {
       b.position.y += Math.sin(Math.PI * Math.min(1, k / 0.42)) * 0.18 * (k < 0.42 ? 1 : 0);
       if (k >= 1) {
         this.lunge = null;
-        this.squashK = 1;
+        this.land();
       }
     }
     // recoil
@@ -214,14 +221,16 @@ export class CombatUnit {
       if (k < 0.12) sy *= 1 - 0.15 * ease.hump(k / 0.12);
       if (k >= 1) {
         this.jumpT = -1;
-        this.squashK = 1;
+        this.land();
       }
     }
-    // landing squash
+    // landing squash: squash hard, then a small overshoot stretch before settling
     if (this.squashK > 0) {
-      sy *= 1 - 0.14 * this.squashK;
-      sx *= 1 + 0.1 * this.squashK;
-      this.squashK = Math.max(0, this.squashK - dt * 5);
+      const k = this.squashK;
+      const wave = k > 0.45 ? (k - 0.45) / 0.55 : -(0.45 - k) / 0.45 * 0.35;
+      sy *= 1 - 0.2 * wave;
+      sx *= 1 + 0.14 * wave;
+      this.squashK = Math.max(0, this.squashK - dt * 4.2);
     }
     // broken: lean back + cold tint
     this.brokenK += ((this.broken ? 1 : 0) - this.brokenK) * Math.min(1, dt * 8);
