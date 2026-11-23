@@ -1,0 +1,8 @@
+[
+  { "id": "frail", "name": "Frail", "description": "Max HP -15% for the next few fights.",
+    "effect": { "stat": "hp", "value": -0.15 } },
+  { "id": "dim", "name": "Dim", "description": "The Ember gains 30% less for the next few fights.",
+    "effect": { "stat": "ember_gain", "value": -0.3 } },
+  { "id": "slow", "name": "Slow", "description": "SPD -15% for the next few fights.",
+    "effect": { "stat": "spd", "value": -0.15 } }
+]

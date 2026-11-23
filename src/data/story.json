@@ -1,0 +1,84 @@
+{
+  "scenes": [
+    {
+      "id": "prologue",
+      "title": "Ashen Hearth",
+      "backdrop": "ashen_hearth",
+      "lines": [
+        { "speaker": "narrator", "text": "The sun has not risen in a hundred days. The last towns huddle around their hearths, and the hearths are going out." },
+        { "speaker": "narrator", "text": "At Ashen Hearth, one wagon is ready to leave." },
+        { "speaker": "mira", "text": "This is the last true flame. It was lit in Solenne, and Solenne is where it has to go." },
+        { "speaker": "oren", "text": "It's so small." },
+        { "speaker": "mira", "text": "It's young. So were we all, once." },
+        { "speaker": "mira", "text": "Bram, hold the line. Lysa, watch the road. Oren, keep them standing. Kit... try not to steal anything." },
+        { "speaker": "kit", "text": "No promises." },
+        { "speaker": "ember", "text": "...crackle..." },
+        { "speaker": "mira", "text": "Keep it fed. Keep it moving." }
+      ]
+    },
+    {
+      "id": "after_r1",
+      "title": "The Whisper",
+      "backdrop": "whisperpine",
+      "lines": [
+        { "speaker": "narrator", "text": "The Rootmother falls, and the fireflies drift back into the trees." },
+        { "speaker": "lysa", "text": "The woods are quiet. Too quiet." },
+        { "speaker": "ember", "text": "...far... so far... the cold is waiting..." },
+        { "speaker": "bram", "text": "Did that thing just speak?" },
+        { "speaker": "mira", "text": "It's frightened. It says the road gets colder from here." },
+        { "speaker": "oren", "text": "You understood it? I've tended flames my whole life. They don't speak." },
+        { "speaker": "mira", "text": "This one does. You only have to have listened long enough." },
+        { "speaker": "mira", "text": "Come on. The dunes won't cross themselves." }
+      ]
+    },
+    {
+      "id": "after_r2",
+      "title": "The Milestone",
+      "backdrop": "glass_dunes",
+      "lines": [
+        { "speaker": "narrator", "text": "Past the Colossus, a stone marker leans out of the glass, worn smooth by three hundred years of wind." },
+        { "speaker": "lysa", "text": "There are names carved here. Drivers of the old caravans." },
+        { "speaker": "kit", "text": "Hey, Mira. This one's yours. Same spelling and everything." },
+        { "speaker": "mira", "text": "A common name, in the old days." },
+        { "speaker": "lysa", "text": "It's carved in your hand, Mira. I've seen you mark the maps." },
+        { "speaker": "ember", "text": "...she was here... she was here before..." },
+        { "speaker": "mira", "text": "The pass is ahead. We should reach it before the light goes." },
+        { "speaker": "bram", "text": "She didn't answer the question." },
+        { "speaker": "oren", "text": "No. She didn't." }
+      ]
+    },
+    {
+      "id": "after_r3_twist",
+      "title": "What the Ember Knew",
+      "backdrop": "frostspire",
+      "lines": [
+        { "speaker": "narrator", "text": "Under the dead aurora, the caravan makes its last camp before Solenne." },
+        { "speaker": "mira", "text": "You deserve the truth before the gates. I was the Ember, once. The one before this one." },
+        { "speaker": "mira", "text": "Three hundred years ago I took this shape to guide the last caravan home. I've driven the road ever since, waiting for a new flame strong enough to make it." },
+        { "speaker": "oren", "text": "The rite of relighting. An Ember has to give itself to the brazier." },
+        { "speaker": "mira", "text": "Yes. And this one is too young. It would go out, and Solenne with it." },
+        { "speaker": "ember", "text": "...no... don't... I can do it..." },
+        { "speaker": "mira", "text": "I know you can, little one. Not yet. So I'll go in your place." },
+        { "speaker": "kit", "text": "There has to be another way. There's always another way." },
+        { "speaker": "bram", "text": "Then we get you to the brazier, and we make it count." },
+        { "speaker": "mira", "text": "That's all I've ever asked. Keep it moving." }
+      ]
+    },
+    {
+      "id": "epilogue",
+      "title": "Solenne Burns Again",
+      "backdrop": "solenne",
+      "lines": [
+        { "speaker": "narrator", "text": "The Hollow King is ash. Before them stands the great brazier, cold for three hundred years." },
+        { "speaker": "mira", "text": "Don't look so grim. I've been waiting a long time to be warm." },
+        { "speaker": "mira", "text": "Oren, teach it the rites. Bram, keep it safe. Lysa, Kit, show it the road." },
+        { "speaker": "narrator", "text": "Mira steps into the brazier. For a moment she is only light." },
+        { "speaker": "narrator", "text": "Then Solenne burns. Gold runs down the ruined towers, and far away, a sunrise." },
+        { "speaker": "lysa", "text": "Look. On the wagon." },
+        { "speaker": "narrator", "text": "Where the young Ember sat, a small girl with Mira's eyes is holding the reins." },
+        { "speaker": "mira_child", "text": "Well? The world's still dark out there." },
+        { "speaker": "mira_child", "text": "Keep it moving." }
+      ]
+    }
+  ]
+}

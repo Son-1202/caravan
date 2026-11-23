@@ -1,0 +1,69 @@
+[
+  {
+    "id": "whisperpine", "name": "Whisperpine Woods", "subtitle": "Where the fireflies still remember", "order": 1, "darkness": 0.0,
+    "palette": { "primary": "#2f5a3a", "secondary": "#7fa65a", "fog": "#1d3326", "light": "#ffd27a" },
+    "fights": [
+      { "id": "wp_wolves", "front": ["moss_wolf", "moss_wolf"], "back": [] },
+      { "id": "wp_thicket", "front": ["thornling"], "back": ["wisp_lantern"] },
+      { "id": "wp_glade", "front": ["moss_wolf", "thornling"], "back": ["wisp_lantern"] },
+      { "id": "wp_wisps", "front": ["thornling"], "back": ["wisp_lantern", "wisp_lantern"] },
+      { "id": "wp_pack", "front": ["moss_wolf", "moss_wolf"], "back": ["wisp_lantern"] }
+    ],
+    "elites": [
+      { "id": "wp_stag", "front": ["barkhide_stag"], "back": [] },
+      { "id": "wp_stag_wisp", "front": ["barkhide_stag"], "back": ["wisp_lantern"] }
+    ],
+    "boss": { "id": "wp_boss", "front": ["rootmother"], "back": [] },
+    "bossId": "rootmother"
+  },
+  {
+    "id": "glass_dunes", "name": "Glass Dunes", "subtitle": "The sand remembers every footstep, and cuts", "order": 2, "darkness": 0.25,
+    "palette": { "primary": "#c4893f", "secondary": "#8fd3e0", "fog": "#6b4a2c", "light": "#ffb35c" },
+    "fights": [
+      { "id": "gd_jackals", "front": ["dune_jackal", "dune_jackal"], "back": [] },
+      { "id": "gd_scarab_wraith", "front": ["glass_scarab"], "back": ["sand_wraith"] },
+      { "id": "gd_haze", "front": ["dune_jackal"], "back": ["sand_wraith", "sand_wraith"] },
+      { "id": "gd_shells", "front": ["glass_scarab", "glass_scarab"], "back": [] },
+      { "id": "gd_hunt", "front": ["dune_jackal", "glass_scarab"], "back": ["sand_wraith"] }
+    ],
+    "elites": [
+      { "id": "gd_basilisk", "front": ["prism_basilisk"], "back": [] },
+      { "id": "gd_basilisk_scarab", "front": ["prism_basilisk", "glass_scarab"], "back": [] }
+    ],
+    "boss": { "id": "gd_boss", "front": ["sunshard_colossus"], "back": [] },
+    "bossId": "sunshard_colossus"
+  },
+  {
+    "id": "frostspire", "name": "Frostspire Pass", "subtitle": "Under the aurora, nothing stays warm", "order": 3, "darkness": 0.5,
+    "palette": { "primary": "#9fb8d6", "secondary": "#6fe3c1", "fog": "#2a3a55", "light": "#ff9a4a" },
+    "fights": [
+      { "id": "fs_wights", "front": ["frost_wight", "frost_wight"], "back": [] },
+      { "id": "fs_harpies", "front": ["frost_wight"], "back": ["ice_harpy", "ice_harpy"] },
+      { "id": "fs_golem", "front": ["rime_golem"], "back": ["ice_harpy"] },
+      { "id": "fs_crossing", "front": ["rime_golem", "frost_wight"], "back": [] },
+      { "id": "fs_storm", "front": ["frost_wight", "ice_harpy"], "back": ["ice_harpy"] }
+    ],
+    "elites": [
+      { "id": "fs_drake", "front": ["aurora_drake"], "back": [] },
+      { "id": "fs_drake_golem", "front": ["aurora_drake", "rime_golem"], "back": [] }
+    ],
+    "boss": { "id": "fs_boss", "front": ["wintermaw"], "back": [] },
+    "bossId": "wintermaw"
+  },
+  {
+    "id": "solenne", "name": "Gates of Solenne", "subtitle": "The city that let its fire go out", "order": 4, "darkness": 0.8,
+    "palette": { "primary": "#8a7650", "secondary": "#3b3438", "fog": "#1a1618", "light": "#ff7a2e" },
+    "fights": [
+      { "id": "so_remnants", "front": ["frost_wight", "glass_scarab"], "back": ["sand_wraith"] },
+      { "id": "so_gatewatch", "front": ["rime_golem"], "back": ["ice_harpy", "sand_wraith"] },
+      { "id": "so_ashpack", "front": ["dune_jackal", "frost_wight"], "back": ["ice_harpy"] },
+      { "id": "so_ember_eaters", "front": ["rime_golem", "dune_jackal"], "back": ["wisp_lantern"] }
+    ],
+    "elites": [
+      { "id": "so_drake", "front": ["aurora_drake"], "back": ["sand_wraith"] },
+      { "id": "so_basilisk", "front": ["prism_basilisk", "frost_wight"], "back": [] }
+    ],
+    "boss": { "id": "so_boss", "front": ["hollow_king"], "back": [] },
+    "bossId": "hollow_king"
+  }
+]

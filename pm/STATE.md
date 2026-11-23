@@ -15,7 +15,7 @@
 | ID | Role | Title | Status |
 |---|---|---|---|
 | T-01 | DEV | Scaffold + diorama + post-FX | next |
-| T-02 | CONTENT | GDD + data JSON + story | next |
+| T-02 | CONTENT | GDD + data JSON + story | done |
 | T-03 | ART | 3 key-art candidates | done (style bible = B) |
 
 ## Known issues

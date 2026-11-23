@@ -1,0 +1,109 @@
+[
+  {
+    "id": "moss_shrine",
+    "title": "The Moss Shrine",
+    "text": "A shrine sleeps under a coat of moss. Someone left an offering bowl of Ember Shards, and a candle that has never been lit.",
+    "regions": ["whisperpine", "glass_dunes"],
+    "choices": [
+      { "label": "Light the candle from the Ember",
+        "outcomes": [
+          { "probability": 0.6, "text": "The candle catches. Something in the moss stirs and leaves a gift.", "effects": [{ "kind": "relic" }] },
+          { "probability": 0.4, "text": "The flame gutters. The Ember shrinks back, sulking.", "effects": [{ "kind": "curse", "curse": "dim", "fights": 2 }] }
+        ] },
+      { "label": "Take the offering",
+        "outcomes": [
+          { "probability": 0.5, "text": "Nobody stops you. Nobody had to.", "effects": [{ "kind": "shards", "value": 45 }] },
+          { "probability": 0.5, "text": "The shards are cold. So, now, are your hands.", "effects": [{ "kind": "shards", "value": 45 }, { "kind": "curse", "curse": "frail", "fights": 3 }] }
+        ] },
+      { "label": "Leave it be",
+        "outcomes": [{ "probability": 1, "text": "Mira nods. \"Some things are better left sleeping.\"", "effects": [{ "kind": "nothing" }] }] }
+    ]
+  },
+  {
+    "id": "buried_wagon",
+    "title": "The Buried Wagon",
+    "text": "A wagon's ribs poke from the sand, its canvas bleached white. A caravan like yours, once.",
+    "regions": ["glass_dunes", "frostspire"],
+    "choices": [
+      { "label": "Dig it out",
+        "outcomes": [
+          { "probability": 0.55, "text": "A strongbox, still sealed.", "effects": [{ "kind": "shards", "value": 70 }] },
+          { "probability": 0.45, "text": "Something else was living in it.", "effects": [{ "kind": "fight", "pool": "fight", "relicReward": false }, { "kind": "shards", "value": 40 }] }
+        ] },
+      { "label": "Search the surface",
+        "outcomes": [{ "probability": 1, "text": "A few loose shards and a dented flask.", "effects": [{ "kind": "shards", "value": 20 }, { "kind": "consumable" }] }] },
+      { "label": "Say a word for them and move on",
+        "outcomes": [{ "probability": 1, "text": "Oren speaks the hearth-rite. The party feels steadier.", "effects": [{ "kind": "hp", "value": 0.1 }] }] }
+    ]
+  },
+  {
+    "id": "mirage_market",
+    "title": "The Mirage Market",
+    "text": "Stalls shimmer between two dunes. The merchant has no face, only a smile. \"Everything here costs a little of you.\"",
+    "regions": ["glass_dunes"],
+    "choices": [
+      { "label": "Trade blood for glass (party -20% HP)",
+        "outcomes": [{ "probability": 1, "text": "The smile widens. You leave with something real.", "effects": [{ "kind": "hp", "value": -0.2 }, { "kind": "relic" }] }] },
+      { "label": "Haggle with shards (60)", "costShards": 60,
+        "outcomes": [
+          { "probability": 0.7, "text": "A fair trade, against all odds.", "effects": [{ "kind": "shards", "value": -60 }, { "kind": "relic" }] },
+          { "probability": 0.3, "text": "The market melts into haze, and your shards with it.", "effects": [{ "kind": "shards", "value": -60 }] }
+        ] },
+      { "label": "Walk on",
+        "outcomes": [{ "probability": 1, "text": "Kit looks back once. The stalls are already gone.", "effects": [{ "kind": "nothing" }] }] }
+    ]
+  },
+  {
+    "id": "frozen_pilgrim",
+    "title": "The Frozen Pilgrim",
+    "text": "A pilgrim stands frozen mid-step, a dark lantern in one hand. The ice around the lantern is thinner, as if it remembers warmth.",
+    "regions": ["frostspire", "solenne"],
+    "choices": [
+      { "label": "Share the Ember's warmth",
+        "outcomes": [{ "probability": 1, "text": "The lantern flickers once. The pilgrim does not wake, but the party learns something.", "effects": [{ "kind": "hp", "value": -0.1 }, { "kind": "skill_rank" }] }] },
+      { "label": "Take the lantern",
+        "outcomes": [
+          { "probability": 0.65, "text": "It comes free with a crack of ice.", "effects": [{ "kind": "relic" }] },
+          { "probability": 0.35, "text": "The pilgrim turns its head.", "effects": [{ "kind": "fight", "pool": "elite", "relicReward": true }] }
+        ] },
+      { "label": "Pass by quietly",
+        "outcomes": [{ "probability": 1, "text": "Lysa keeps her eyes on the road.", "effects": [{ "kind": "nothing" }] }] }
+    ]
+  },
+  {
+    "id": "ember_whispers",
+    "title": "The Ember Whispers",
+    "text": "At the night fire the Ember crackles in a rhythm almost like words. Mira has gone very still.",
+    "choices": [
+      { "label": "Listen closely",
+        "outcomes": [
+          { "probability": 0.5, "text": "It shows you a way to fight you had not seen.", "effects": [{ "kind": "skill_rank" }] },
+          { "probability": 0.5, "text": "It shows you too much. Your legs are heavy for days.", "effects": [{ "kind": "curse", "curse": "slow", "fights": 2 }] }
+        ] },
+      { "label": "Feed it shards (40)", "costShards": 40,
+        "outcomes": [{ "probability": 1, "text": "The Ember drinks the shards and glows like noon. Everyone sleeps well.", "effects": [{ "kind": "shards", "value": -40 }, { "kind": "hp", "value": 1.0 }] }] },
+      { "label": "Ask Mira what it says",
+        "outcomes": [{ "probability": 1, "text": "\"It says keep moving,\" she says, and won't say more.", "effects": [{ "kind": "hp", "value": 0.15 }] }] }
+    ]
+  },
+  {
+    "id": "ash_choir",
+    "title": "The Ash Choir",
+    "text": "In a ruined chapel, figures of ash sing a hymn for a city that is gone. Their song is beautiful and very cold.",
+    "regions": ["solenne", "frostspire"],
+    "choices": [
+      { "label": "Join the song",
+        "outcomes": [
+          { "probability": 0.6, "text": "For one verse, Solenne is alive again.", "effects": [{ "kind": "hp", "value": 0.3 }] },
+          { "probability": 0.4, "text": "The cold gets into your voice and stays.", "effects": [{ "kind": "curse", "curse": "frail", "fights": 2 }] }
+        ] },
+      { "label": "Silence them",
+        "outcomes": [{ "probability": 1, "text": "The hymn breaks into a scream.", "effects": [{ "kind": "fight", "pool": "elite", "relicReward": true }, { "kind": "shards", "value": 50 }] }] },
+      { "label": "Hold the Ember up to them",
+        "outcomes": [
+          { "probability": 0.5, "text": "The ash remembers fire and falls gently to the floor, at peace.", "effects": [{ "kind": "relic" }] },
+          { "probability": 0.5, "text": "They turn toward the light, hungry.", "effects": [{ "kind": "fight", "pool": "fight", "relicReward": true }] }
+        ] }
+    ]
+  }
+]

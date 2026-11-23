@@ -1,0 +1,17 @@
+{
+  "stepsPerRegion": 3,
+  "nodesPerStep": { "min": 2, "max": 3 },
+  "stepWeights": [
+    { "fight": 5, "elite": 0, "camp": 0, "merchant": 1, "event": 3 },
+    { "fight": 4, "elite": 3, "camp": 1, "merchant": 2, "event": 3 },
+    { "fight": 3, "elite": 3, "camp": 4, "merchant": 2, "event": 2 }
+  ],
+  "firstStepTypes": ["fight", "event"],
+  "rules": {
+    "maxPerRegion": { "elite": 1, "camp": 1, "merchant": 1, "event": 2 },
+    "uniqueTypesPerStep": true,
+    "noRepeatEvents": true,
+    "guaranteeCombatEachStep": true
+  },
+  "bossNodeAtEnd": true
+}
