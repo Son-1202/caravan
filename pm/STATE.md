@@ -1,6 +1,6 @@
 # STATE — single source of truth
 
-**Phase:** 0 Preflight → 1 Foundation
+**Phase:** 3 Core systems (Phase 2 deploy is waiting on the user's Vercel import)
 **Live URL:** (pending Vercel)
 **Repo:** https://github.com/Son-1202/caravan
 **Credits spent:** 6 / 100
@@ -14,9 +14,13 @@
 ## Tickets
 | ID | Role | Title | Status |
 |---|---|---|---|
-| T-01 | DEV | Scaffold + diorama + post-FX | next |
+| T-01 | DEV | Scaffold + diorama + post-FX | done |
+| T-04 | DEV | src/sim combat + run + tests | in progress |
+| T-05 | ART | Regions 1–2 + heroes | in progress |
 | T-02 | CONTENT | GDD + data JSON + story | done |
 | T-03 | ART | 3 key-art candidates | done (style bible = B) |
 
 ## Known issues
 - Vercel: user is importing the repo via the dashboard; URL pending.
+- The assets registry (src/render/assets.ts) only globs *.png. Art uses .jpg for opaque layers → extend the glob in T-07.
+- The scripts/pixelize.ts and scripts/balance.ts files are stubs (T-06 and the art pipeline will complete them).
