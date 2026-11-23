@@ -1,7 +1,7 @@
 # STATE — single source of truth
 
 **Phase:** 5–6 Content & Polish (deploy still waiting on the user's Vercel import)
-**Live URL:** (pending Vercel)
+**Live URL:** https://caravan-of-embers.vercel.app
 **Repo:** https://github.com/Son-1202/caravan
 **Credits spent:** 66 / 100
 

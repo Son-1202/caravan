@@ -11,3 +11,4 @@
 - D-009: Higgsfield routed nano_banana_pro to nano_banana_2 at the same 2 cr. Accepted.
 - D-010: The content data uses casts plus runtime validateContent() instead of satisfies, because TS widens string literals in imported JSON. DEV adds a vitest for it. CONTENT also added curses.json.
 - D-011: The 60 fps gate can't be measured headlessly (software GL). Accepted T-13 on visual review plus 0.8 ms of per-frame CPU update. Auto-drop to Low guards weak devices.
+- D-012: The live deployment was found at https://caravan-of-embers.vercel.app. Its served bundle hashes match the latest local build of main, so it auto-deploys.

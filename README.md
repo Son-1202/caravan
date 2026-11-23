@@ -3,7 +3,7 @@
 An HD-2D pixel-art caravan roguelite for the browser. Guide a small band of heroes and the last warm Ember
 across a world sliding into cold dusk: Whisperpine Woods, the Glass Dunes, Frostspire Pass, and the Gates of Solenne.
 
-**Live URL:** TBD
+**Live URL:** https://caravan-of-embers.vercel.app
 
 ## Stack
 Vite + TypeScript (strict) + Three.js + `postprocessing` + Howler. Static build deployed on Vercel.
