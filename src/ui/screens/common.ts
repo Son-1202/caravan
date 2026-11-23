@@ -56,6 +56,8 @@ export function partyChip(run: Run, id: HeroId): HTMLElement {
 
 export interface TopBarOpts {
   onUseItem?: (id: string) => void;
+  /** compact region label shown instead of the full name on phone landscape */
+  regionShort?: string;
 }
 
 /** Region · shards · relics · consumables · party HP. */
@@ -78,7 +80,7 @@ export function topBar(run: Run, regionName: string, opts: TopBarOpts = {}): HTM
   return h(
     'div',
     { class: 'topbar panel' },
-    h('div', { class: 'topbar__region', text: regionName }),
+    h('div', { class: 'topbar__region' }, h('span', { class: 'topbar__full', text: regionName }), opts.regionShort ? h('span', { class: 'topbar__short', text: opts.regionShort }) : null),
     h('div', { class: 'topbar__shards', tip: 'Ember Shards' }, iconEl('shard', 20), h('span', { text: String(run.shards) })),
     relics,
     items,

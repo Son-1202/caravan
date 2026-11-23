@@ -23,6 +23,20 @@ interface Plate {
   pips: HTMLElement;
   shieldKey: string;
   broken: HTMLElement;
+  /** where the plate sat last frame (kept while it stays clear: no flicker during lunges) */
+  spot?: Spot;
+}
+
+type Spot = 'above' | 'below';
+
+interface Placed {
+  p: Plate;
+  x: number;
+  /** sprite head (plate bottom when above) */
+  y: number;
+  /** sprite feet (plate top when below) */
+  feet: number;
+  prefer: Spot;
 }
 
 interface Float {
@@ -143,7 +157,7 @@ export class CombatHud {
   update(dt: number, s: BattleSnapshot, canIgnite: boolean, consumables: readonly string[]): void {
     this.clock += dt;
     const gmax = BALANCE.gauge.max;
-    const placed: Array<{ p: Plate; x: number; y: number }> = [];
+    const placed: Placed[] = [];
     for (const u of s.units) {
       const p = this.plates.get(u.uid);
       if (!p) continue;
@@ -151,7 +165,9 @@ export class CombatHud {
       const vis = !!at && u.alive;
       p.el.style.display = vis ? '' : 'none';
       if (!vis || !at) continue;
-      placed.push({ p, x: at.x, y: at.y });
+      const feet = this.pos(u.uid, 'feet');
+      // back-row heroes stand by the wagon lantern and behind the front row: their plates go under their feet
+      placed.push({ p, x: at.x, y: at.y, feet: feet ? feet.y : at.y, prefer: u.side === 'hero' && u.row === 'back' ? 'below' : 'above' });
       p.hp.style.width = `${(100 * u.hp) / Math.max(1, u.maxHp)}%`;
       p.atb.style.width = `${Math.min(100, (100 * u.gauge) / gmax)}%`;
       if (u.side === 'hero') p.hpText.textContent = `${Math.ceil(u.hp)}/${u.maxHp}`;
@@ -182,22 +198,35 @@ export class CombatHud {
   }
 
   /**
-   * Position plates at their unit anchors, then stagger any that would overlap:
-   * left to right, a plate colliding with an already placed one is lifted above it.
-   * All sizes are read before any transform is written (no layout thrash).
+   * Collision-free plate layout. Each plate tries, in order: its preferred spot
+   * (above the head, or under the feet for back-row heroes; a plate pushed to the other spot stays there
+   * until the preferred one is clearly free), the other spot; if both collide it is
+   * stacked above the plate it hits. All sizes are read before any transform is written.
    */
-  private layoutPlates(placed: Array<{ p: Plate; x: number; y: number }>): void {
+  private layoutPlates(placed: Placed[]): void {
     const boxes = placed
       .map((e) => ({ ...e, w: e.p.el.offsetWidth, h: e.p.el.offsetHeight, top: 0 }))
       .sort((a, b) => a.x - b.x);
     const done: typeof boxes = [];
+    const hitAt = (b: (typeof boxes)[number], top: number, m = 2) =>
+      done.find((o) => Math.abs(o.x - b.x) < (o.w + b.w) / 2 + m && top < o.top + o.h + m && top + b.h > o.top - m);
     for (const b of boxes) {
-      b.top = b.y - b.h; // plate is anchored by its bottom-centre
-      for (let guard = 0; guard < 6; guard++) {
-        const hit = done.find((o) => Math.abs(o.x - b.x) < (o.w + b.w) / 2 + 2 && b.top < o.top + o.h + 2 && b.top + b.h > o.top - 2);
-        if (!hit) break;
-        b.top = hit.top - b.h - 3;
-      }
+      const topOf = (sp: Spot): number => (sp === 'above' ? b.y - b.h : b.feet + 4);
+      const other: Spot = b.prefer === 'above' ? 'below' : 'above';
+      // return to the preferred spot only once it is clear by a wider margin (no flicker while units lunge)
+      const back = b.p.spot === other && !hitAt(b, topOf(b.prefer), 14);
+      const order: Spot[] = b.p.spot === other && !back ? [other, b.prefer] : [b.prefer, other];
+      let spot = order.find((sp) => !hitAt(b, topOf(sp)));
+      if (!spot) {
+        spot = 'above';
+        b.top = topOf('above');
+        for (let guard = 0; guard < 6; guard++) {
+          const hit = hitAt(b, b.top);
+          if (!hit) break;
+          b.top = hit.top - b.h - 3;
+        }
+      } else b.top = topOf(spot);
+      b.p.spot = spot;
       done.push(b);
       b.p.el.style.transform = `translate(${Math.round(b.x - b.w / 2)}px, ${Math.round(b.top)}px)`;
     }

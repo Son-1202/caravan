@@ -120,14 +120,15 @@ export function titleScreen(o: TitleOpts, act: TitleActions): ScreenView {
     h('div', { class: 'title__art', style: art ? { 'background-image': `url("${art}")` } : {} }),
     h('div', { class: 'start__shade' }),
     embers(36),
+    // logo in the sky, menu lower-left over a soft shade: the caravan in the key art stays visible
+    h('div', { class: 'title__foot', attrs: { 'aria-hidden': 'true' } }),
     h(
       'div',
-      { class: 'title__box' },
+      { class: 'title__head' },
       h('h1', { class: 'title title__name', text: 'Caravan of Embers' }),
       h('p', { class: 'start__tag', text: 'Carry the last flame to Solenne.' }),
-      tap,
-      menu,
     ),
+    h('div', { class: 'title__box' }, tap, menu),
     h('div', { class: 'start__seed', text: `seed ${o.seed}${s.totalWins ? ` · ${s.totalWins} win${s.totalWins === 1 ? '' : 's'}` : ''}` }),
     modal,
   );

@@ -21,13 +21,40 @@ const NODE_TIP: Record<string, string> = {
   boss: 'Boss — the guardian of the region. Pick 1 of 3 relics.',
 };
 
+/** Left→right quarter of the world parchment (ui/map_bg) that shows each region. */
+const REGION_QUARTER: Record<string, number> = { whisperpine: 0, glass_dunes: 1, frostspire: 2, solenne: 3 };
+/** Short top-bar names for phone landscape. */
+export const REGION_SHORT: Record<string, string> = { whisperpine: 'Whisperpine', glass_dunes: 'Dunes', frostspire: 'Frostspire', solenne: 'Solenne' };
+/** Background zoom: the board shows 1/MAP_ZOOM of the parchment's width (a region is 1/4). */
+const MAP_ZOOM = 2.6;
+
+/** Zoom/pan the parchment to one region's quarter; returns that quarter's span on the board (0..100). */
+function regionView(q: number): { bgSize: string; bgPosX: string; from: number; to: number } {
+  const v = 1 / MAP_ZOOM;
+  const start = Math.min(1 - v, Math.max(0, (q + 0.5) / 4 - v / 2));
+  return {
+    bgSize: `${MAP_ZOOM * 100}% auto`,
+    bgPosX: `${((start * MAP_ZOOM) / (MAP_ZOOM - 1)) * 100}%`,
+    from: ((q / 4 - start) / v) * 100,
+    to: (((q + 1) / 4 - start) / v) * 100,
+  };
+}
+
 export function mapScreen(run: Run, visited: ReadonlySet<string>, act: MapActions): ScreenView {
   const region = run.map[run.regionIdx];
   if (!region) return { el: h('div', { class: 'screen' }) };
   const regName = REGION_BY_ID[region.region].name;
   const reachable = new Set(run.availableNodes().map((n) => n.id));
   const bg = getAssetUrl('ui/map_bg.jpg');
-  const board = h('div', { class: 'map__board', style: bg ? { 'background-image': `url("${bg}")` } : {} });
+  const q = REGION_QUARTER[region.region] ?? Math.min(3, run.regionIdx);
+  const view = regionView(q);
+  const board = h('div', {
+    class: 'map__board',
+    style: bg ? { 'background-image': `url("${bg}")`, 'background-size': view.bgSize, 'background-position': `${view.bgPosX} 50%` } : {},
+  });
+  // the neighbouring regions' art at the edges: behind = travelled (warm sepia), ahead = fogged
+  if (view.from > 0.5) board.append(h('div', { class: 'map__veil map__veil--past', style: { left: '0', width: `${view.from}%` } }, q > 0 ? h('span', { class: 'map__veil-tag', text: 'Travelled' }) : null));
+  if (view.to < 99.5) board.append(h('div', { class: 'map__veil map__veil--ahead', style: { left: `${view.to}%`, right: '0' } }, h('span', { class: 'map__veil-tag', text: 'Ahead' })));
   const svgNs = 'http://www.w3.org/2000/svg';
   const lines = document.createElementNS(svgNs, 'svg');
   lines.setAttribute('class', 'map__lines');
@@ -36,10 +63,13 @@ export function mapScreen(run: Run, visited: ReadonlySet<string>, act: MapAction
   board.append(lines);
 
   const cols = region.steps.length;
+  // nodes sit on this region's art (with a margin so labels stay inside the quarter)
+  const x0 = Math.max(7, view.from + 5);
+  const x1 = Math.min(93, view.to - 5);
   const pos = new Map<string, { x: number; y: number }>();
   region.steps.forEach((nodes, s) => {
     nodes.forEach((n, i) => {
-      const x = 10 + (80 * s) / Math.max(1, cols - 1);
+      const x = x0 + ((x1 - x0) * s) / Math.max(1, cols - 1);
       const y = nodes.length === 1 ? 50 : 22 + (56 * i) / (nodes.length - 1);
       pos.set(n.id, { x, y });
     });
@@ -68,7 +98,7 @@ export function mapScreen(run: Run, visited: ReadonlySet<string>, act: MapAction
   const el = h(
     'div',
     { class: 'screen screen--map' },
-    topBar(run, `${regName} · ${run.regionIdx + 1}/4`, { onUseItem: act.useItem }),
+    topBar(run, `${regName} · ${run.regionIdx + 1}/4`, { onUseItem: act.useItem, regionShort: `${REGION_SHORT[region.region] ?? regName} ${run.regionIdx + 1}/4` }),
     h('div', { class: 'map__wrap panel panel--parchment' }, board, h('div', { class: 'map__hint', text: 'Choose the road ahead' })),
   );
   return { el };

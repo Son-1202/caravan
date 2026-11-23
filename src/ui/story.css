@@ -16,8 +16,13 @@
   70% { opacity: 0.8; }
   100% { transform: translate(var(--drift, 40px), -105vh); opacity: 0; }
 }
-.title__box { position: relative; isolation: isolate; margin-top: auto; margin-bottom: 7vh; display: flex; flex-direction: column; align-items: center; gap: var(--gap); }
-.title__name { font-size: clamp(30px, 6.2vw, 80px); color: #ffe0a0; animation: titleGlow 3.2s ease-in-out infinite; }
+/* T-15-2: logo in the upper sky, menu lower-left — the caravan and heroes (centre / centre-right) stay clear */
+.title__head { position: absolute; left: 0; right: 0; top: clamp(10px, 5vh, 48px); display: flex; flex-direction: column; align-items: center; gap: calc(var(--gap) * 0.5); pointer-events: none; }
+.title__head::before { content: ''; position: absolute; inset: -40% 8% -30%; z-index: -1; background: radial-gradient(ellipse at center, rgba(5, 3, 8, 0.42), rgba(5, 3, 8, 0) 70%); }
+.title__head { isolation: isolate; }
+.title__foot { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 48% 58% at 0% 100%, rgba(5, 3, 8, 0.82), rgba(5, 3, 8, 0.5) 50%, rgba(5, 3, 8, 0) 100%); }
+.title__box { position: relative; isolation: isolate; align-self: flex-start; margin-top: auto; margin-left: clamp(16px, 5vw, 72px); margin-bottom: 7vh; display: flex; flex-direction: column; align-items: center; gap: var(--gap); }
+.title__name { font-size: clamp(30px, 5.4vw, 72px); color: #ffe0a0; animation: titleGlow 3.2s ease-in-out infinite; }
 @keyframes titleGlow {
   0%, 100% { text-shadow: 0 4px 0 #000, 0 0 14px rgba(255, 140, 50, 0.55), 0 0 40px rgba(255, 100, 30, 0.3); }
   50% { text-shadow: 0 4px 0 #000, 0 0 22px rgba(255, 170, 70, 0.85), 0 0 64px rgba(255, 110, 30, 0.5); }
@@ -103,7 +108,8 @@
 /* ---------- phone landscape ---------- */
 @media (max-height: 480px) {
   .title__box { margin-bottom: 4vh; gap: 6px; }
-  .title__name { font-size: clamp(26px, 5.4vw, 44px); }
+  .title__head { top: 8px; gap: 2px; }
+  .title__name { font-size: clamp(24px, 4.8vw, 40px); }
   .start__tag { font-size: 0.9em; }
   .title__menu { gap: 6px; }
   .title__begin { min-width: 220px; }
@@ -153,4 +159,4 @@
   .reward .card { padding: 4px 6px; gap: 3px; }
   .reward .relic--lg { width: 44px; height: 44px; }
 }
-.title__box::before { content: ''; position: absolute; inset: -18% -12%; z-index: -1; background: radial-gradient(ellipse at center, rgba(5, 3, 8, 0.55), rgba(5, 3, 8, 0) 70%); pointer-events: none; }
+
