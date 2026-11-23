@@ -1,6 +1,6 @@
 # STATE — single source of truth
 
-**Phase:** 8 Ship
+**Phase:** SHIPPED. Live build matches main; e2e 15/15 PASS; live smoke test has 0 console errors.
 **Live URL:** https://caravan-of-embers.vercel.app
 **Repo:** https://github.com/Son-1202/caravan
 **Credits spent:** 66 / 100
@@ -37,3 +37,9 @@
 - The scripts/pixelize.ts and scripts/balance.ts files are stubs (T-06 and the art pipeline will complete them).
 - Combat ground is a flat untextured plane (large empty brown/dark area). The wagon is a placeholder box. Some enemies face the wrong way (fix: a per-enemy flip table). → T-13 polish.
 - 60 fps can't be verified in this container: headless Chromium uses SwiftShader, a software GPU (about 600 ms per frame). It needs a real-GPU check; the quality auto-drop is the safety net.
+
+## Release (2026-11-23)
+- Live: https://caravan-of-embers.vercel.app (auto-deploys from main; the bundle hash matches main)
+- Unit tests 68/68; e2e 15/15; balance report: all B7 rows PASS
+- Credits: 66/100
+- Open known issues: 60 fps not verified on a real GPU. On the forced-win debug path the win screen shows zeroed stats (it skips the fights; the real bot win shows full stats). A human's real run length isn't measured (about 6 min of bot battle time at 2×, so an estimated 15–20 min at 1× with menus and story).
