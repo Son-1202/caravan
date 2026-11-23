@@ -62,3 +62,32 @@ Full prompts: `docs/art/scripts/prompts.py` (style block + text below). Post-pro
 ### Lessons
 - With the style bible as the only reference, isolated layer prompts often reproduce the bible's whole scene (3 of 6 layer gens). For future layer or sprite gens, also pass a clean magenta-layer job (e.g. `d853a2cb...` or hero sheet `b38cc065...`) as a 2nd reference, and say "do not copy composition".
 - Palette-quantized PNG (sharp `palette:true, quality 95`) keeps 1920-wide layers under 1 MB.
+
+## T-08 — Regions 3–4 diorama layers, all enemies + bosses (2026-11-23)
+
+Request: `nano_banana_pro`, 2k, use_unlim false, no folder. Quote 2 cr/image; 13 images = **26 credits** (ticket cap 30; balance 174 -> 148). Jobs report `nano_banana_2`. No regenerations were needed.
+References (two per job, per T-05 lesson): style bible `c05564d4...` + a framing ref: far layers -> whisperpine far `8627db7c...`; mid -> glass_dunes mid `d853a2cb...`; fg -> whisperpine fg `7ebb7e62...`; sprites/bosses -> hero sheet `b38cc065...`. Prompt prefix after the style block: "First reference image: art style only, do not copy its composition. Second reference image: copy its layout and framing only." This stopped the bible-scene copying (0 of 13).
+Full prompts: `docs/art/scripts/prompts_t08.py`. Build: `docs/art/scripts/build_t08.mjs` (run from the folder with the raw PNGs named by key, e.g. `fs_far.png`, `sheetA.png`, `hollow_king.png`; reuses `key.mjs`). Contact sheet: `docs/art/scripts/contact_t08.mjs` -> `assets/raw/T-08_contact.jpg`.
+
+| Key | Output | Job ID | Result / post-fix |
+|---|---|---|---|
+| fs_far | `assets/regions/frostspire/far.jpg` | `3cd07de2-2e52-4e9d-bb5e-fb30124c80a2` | Strong: snowy peaks, aurora, frozen river. Horizon ~45%. A few warm lantern dots. Brightness x0.9. |
+| fs_mid | `assets/regions/frostspire/mid.png` | `e05be77f-a728-457f-9e47-907be95960b1` | OK. Snowy pine line; opaque in the lower ~70% (includes a snowy clearing floor). |
+| fs_fg | `assets/regions/frostspire/fg.png` | `2f282771-569a-48cc-860d-a8f1344ab058` | OK. Dead snowy tree TL, icy rocks + ferns BR. Magenta bled into fog: stricter key (lo 28/hi 130) + `unpink` recolor to cold blue-grey. |
+| so_far | `assets/regions/solenne/far.jpg` | `43b3506e-75d6-457a-a12d-a736d0fd8a83` | Strong: domes, central gate with dim brazier (small flame), ash, near-night. Brightness x0.85. |
+| so_mid | `assets/regions/solenne/mid.png` | `c76f83af-86ea-48d0-a430-e07e284d06ea` | OK. Ruined walls/towers. Darkened x0.7, sat 0.75, cooled (`cool`). |
+| so_fg | `assets/regions/solenne/fg.png` | `53f15f59-725b-40d0-9e72-8059d4281a90` | Came out bright warm gold: darkened x0.42, sat 0.6, cooled. Still the warmest Solenne layer; renderer fog/tint can push it further. |
+| sheetA | moss_wolf, thornling, wisp_lantern, barkhide_stag | `0228d6c2-56c0-416c-a803-06048b3ad2ed` | Strong, distinct colors. moss_wolf faced right -> flipped. Wisp is a carved gourd with blue spark. |
+| sheetB | glass_scarab, dune_jackal, sand_wraith, prism_basilisk | `9b9da67c-b369-4e21-9d9e-702b642d3460` | Strong. scarab + jackal faced right -> flipped. |
+| sheetC | frost_wight, ice_harpy, rime_golem, aurora_drake | `22c1c39c-8021-450c-aae1-12aef36e8c06` | Strong. frost_wight faced right -> flipped. Golem is front-facing. |
+| rootmother | `assets/raw/enemies/rootmother_sprite.png` | `39fa265e-13ed-4410-ba6c-8adc28781bbe` | Strong; firefly crown, reaches left. |
+| sunshard_colossus | `.../sunshard_colossus_sprite.png` | `3e2925e5-9ec3-48d4-b9b5-e9035397d794` | Strong; front-facing (no side view), molten core visible. |
+| wintermaw | `.../wintermaw_sprite.png` | `a688b69d-4e09-4d41-b550-1659002ca60b` | Strong; faces left, open icy maw. Pink-tinted breath fixed with stricter key + `unpink`. |
+| hollow_king | `.../hollow_king_sprite.png` | `26c6541e-4059-43ad-9123-0fe8836e7e33` | Strong; 3/4 left, glowing helm eyes, broken crown, smoke trails right. |
+
+Sprites: quadrant crop -> magenta key -> trim -> flip if needed -> fit inside 900 px (nearest). All files < 0.7 MB. Sizes differ per sprite (trimmed); the renderer should scale by enemy `size`/tier, not raw pixels.
+
+### Lessons
+- Two-reference prompting ("art style only" + "layout and framing only") worked for all 13 gens. Keep using it.
+- "facing LEFT" is ignored ~1 in 3 for quadrupeds/insects; flipping in code is free and fine.
+- Fog/breath over magenta leaves pink semi-transparent pixels; use the stricter key + `unpink` pass for any layer with soft fog.
