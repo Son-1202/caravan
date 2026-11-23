@@ -3,7 +3,7 @@
 **Phase:** 3 Core systems (Phase 2 deploy is waiting on the user's Vercel import)
 **Live URL:** (pending Vercel)
 **Repo:** https://github.com/Son-1202/caravan
-**Credits spent:** 6 / 100
+**Credits spent:** 26 / 100
 
 ## Preflight results
 - gh auth status: FAILED (GH_TOKEN invalid in container). git push via proxy: OK.
@@ -16,7 +16,7 @@
 |---|---|---|---|
 | T-01 | DEV | Scaffold + diorama + post-FX | done |
 | T-04 | DEV | src/sim combat + run + tests | in progress |
-| T-05 | ART | Regions 1–2 + heroes | in progress |
+| T-05 | ART | Regions 1–2 + heroes | done |
 | T-02 | CONTENT | GDD + data JSON + story | done |
 | T-03 | ART | 3 key-art candidates | done (style bible = B) |
 
