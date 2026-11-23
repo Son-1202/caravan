@@ -1,0 +1,111 @@
+{
+  "when": "2026-11-23T12:41:05.549Z",
+  "passed": 15,
+  "failed": 0,
+  "results": [
+    {
+      "name": "(a) game loads with zero console/page errors",
+      "ok": true,
+      "info": "title shown"
+    },
+    {
+      "name": "(c) map screen",
+      "ok": true,
+      "info": "2 nodes on step 1"
+    },
+    {
+      "name": "(c) combat in region 1 (whisperpine)",
+      "ok": true,
+      "info": "region 0, diorama whisperpine, outcome ongoing"
+    },
+    {
+      "name": "(c) combat in region 2 (glass_dunes)",
+      "ok": true,
+      "info": "region 1, diorama glass_dunes, outcome ongoing"
+    },
+    {
+      "name": "(c) combat in region 3 (frostspire)",
+      "ok": true,
+      "info": "region 2, diorama frostspire, outcome ongoing"
+    },
+    {
+      "name": "(c) combat in region 4 (solenne)",
+      "ok": true,
+      "info": "region 3, diorama solenne, outcome ongoing"
+    },
+    {
+      "name": "(c) Break moment",
+      "ok": true,
+      "info": "break event captured"
+    },
+    {
+      "name": "(c) Hollow King boss fight",
+      "ok": true,
+      "info": "enemies: hollow_king"
+    },
+    {
+      "name": "(c) twist dialogue",
+      "ok": true,
+      "info": "after_r3_twist lines 2 and 5"
+    },
+    {
+      "name": "(c) story scenes all open",
+      "ok": true,
+      "info": "5/5 scenes"
+    },
+    {
+      "name": "(c) win screen",
+      "ok": true,
+      "info": "won screen"
+    },
+    {
+      "name": "(c) mobile 844x390 map + battle",
+      "ok": true,
+      "info": "no page overflow"
+    },
+    {
+      "name": "(b) greedy bot full run, seed 7",
+      "ok": true,
+      "info": "lost in 289s (region reached 2)"
+    },
+    {
+      "name": "(b) greedy bot full run, seed 11",
+      "ok": true,
+      "info": "won in 378s (region reached 4)"
+    },
+    {
+      "name": "(b) a greedy bot run wins within 5 seeds",
+      "ok": true,
+      "info": "[{\"seed\":7,\"result\":\"lost\",\"seconds\":289},{\"seed\":11,\"result\":\"won\",\"seconds\":378}]"
+    }
+  ],
+  "botOutcomes": [
+    {
+      "seed": 7,
+      "result": "lost",
+      "seconds": 289
+    },
+    {
+      "seed": 11,
+      "result": "won",
+      "seconds": 378
+    }
+  ],
+  "shots": [
+    "docs/qa/screens/final/title.png",
+    "docs/qa/screens/final/map.png",
+    "docs/qa/screens/final/combat-whisperpine.png",
+    "docs/qa/screens/final/combat-glass_dunes.png",
+    "docs/qa/screens/final/combat-frostspire.png",
+    "docs/qa/screens/final/combat-solenne.png",
+    "docs/qa/screens/final/break.png",
+    "docs/qa/screens/final/boss-hollow-king.png",
+    "docs/qa/screens/final/twist.png",
+    "docs/qa/screens/final/twist-ember.png",
+    "docs/qa/screens/final/win.png",
+    "docs/qa/screens/final/mobile-map-844x390.png",
+    "docs/qa/screens/final/mobile-battle-844x390.png",
+    "docs/qa/screens/final/bot-end-seed7-lost.png",
+    "docs/qa/screens/final/bot-end-seed11-won.png"
+  ]
+}
