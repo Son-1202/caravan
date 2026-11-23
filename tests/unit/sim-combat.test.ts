@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BALANCE, REGION_BY_ID, validateContent } from '../../src/data';
+import { BALANCE, CONSUMABLE_BY_ID, ENEMY_BY_ID, REGION_BY_ID, RELIC_BY_ID, RELICS, validateContent } from '../../src/data';
 import type { BalanceConfig } from '../../src/data';
 import {
   Battle, DEFAULT_FORMATION, SeededRng, compileRelics, curseMods, enemyTargets, makeHeroUnit, type SimEvent,
@@ -68,13 +68,22 @@ describe('shield / break / recover', () => {
     let action = '';
     const normal: number[] = [];
     const vsBroken: number[] = [];
-    for (const e of b.log) {
+    // A killing blow is clamped to the target's remaining HP, so it can't show the multiplier: skip hits whose target dies from them.
+    const lethal = new Set<number>();
+    b.log.forEach((e, i) => {
+      if (e.type !== 'death') return;
+      for (let j = i - 1; j >= 0; j--) {
+        const h = b.log[j] as SimEvent;
+        if (h.type === 'hit' && h.target === e.target) { lethal.add(j); break; }
+      }
+    });
+    b.log.forEach((e, i) => {
       if (e.type === 'break') broken = true;
       if (e.type === 'recover') broken = false;
       if (e.type === 'action_start' && e.actor === 'h:kit') action = e.skill;
       if (e.type === 'ultimate') action = 'ultimate';
-      if (e.type === 'hit' && e.source === 'h:kit' && action === 'basic' && !e.dot) (broken ? vsBroken : normal).push(e.amount);
-    }
+      if (e.type === 'hit' && e.source === 'h:kit' && action === 'basic' && !e.dot && !lethal.has(i)) (broken ? vsBroken : normal).push(e.amount);
+    });
     expect(normal.length).toBeGreaterThan(0);
     expect(vsBroken.length).toBeGreaterThan(0);
     const n = normal[0] as number;
@@ -124,16 +133,30 @@ describe('formation targeting', () => {
 
 describe('Ember / Ignite', () => {
   it('requires a full meter and fires 4 ultimates', () => {
+    const max = BALANCE.ember.max;
+    const coals = RELIC_BY_ID.banked_coals?.effect;
+    const sparkFx = CONSUMABLE_BY_ID.bottled_spark?.effect;
+    if (coals?.kind !== 'start_battle_ember') throw new Error('banked_coals must be a start_battle_ember relic');
+    if (sparkFx?.kind !== 'ember_fill') throw new Error('bottled_spark must be an ember_fill consumable');
+    const start = Math.min(max, coals.value);
+    const spark = sparkFx.value;
+    expect(start).toBeGreaterThan(0);
+    expect(start).toBeLessThan(max); // otherwise the gating below can't be tested with Banked Coals
+    expect(spark).toBeGreaterThan(0);
+    const sparks = Math.ceil((max - start) / spark);
     const b = new Battle({
       party: party(), formation: DEFAULT_FORMATION, enemies: { front: ['hollow_king'], back: [] }, regionOrder: 4, rng: 8,
-      relics: ['banked_coals'], consumables: ['bottled_spark', 'bottled_spark'],
+      relics: ['banked_coals'], consumables: Array<string>(sparks).fill('bottled_spark'),
     });
-    expect(b.state.emberMeter).toBe(30);
+    expect(b.state.emberMeter).toBe(start);
     expect(b.canIgnite()).toBe(false);
     expect(b.ignite().some((e) => e.type === 'ignite')).toBe(false);
-    b.useConsumable('bottled_spark');
-    b.useConsumable('bottled_spark');
-    expect(b.state.emberMeter).toBe(100);
+    for (let i = 0; i < sparks; i++) {
+      expect(b.canIgnite()).toBe(false);
+      b.useConsumable('bottled_spark');
+      expect(b.state.emberMeter).toBe(Math.min(max, start + (i + 1) * spark));
+    }
+    expect(b.state.emberMeter).toBe(max);
     expect(b.canIgnite()).toBe(true);
     const ev = b.ignite();
     expect(ev[0]).toEqual({ type: 'ignite' });
@@ -186,16 +209,24 @@ describe('hero AI', () => {
 
 describe('bosses', () => {
   it('the Hollow King goes through all 3 phases before he dies', () => {
-    for (const [seed, level] of [[42, 4], [7, 4], [13, 12]] as const) {
+    const phaseDefs = ENEMY_BY_ID.hollow_king?.phases ?? [];
+    expect(phaseDefs).toHaveLength(2); // 3 phases = 2 phase transitions
+    const expected = phaseDefs.map((_, i) => i + 2);
+    // HK is a gear check: an over-geared party (every relic, high level, max skill rank) so the test checks phases, not balance.
+    const rank = BALANCE.skills.maxRank;
+    const geared = (level: number) => party(level, { bram: { skillRank: rank }, kit: { skillRank: rank }, lysa: { skillRank: rank }, oren: { skillRank: rank } });
+    for (const [seed, level] of [[42, 12], [7, 12], [13, 16]] as const) {
       const b = new Battle({
-        party: party(level), formation: DEFAULT_FORMATION, enemies: REGION_BY_ID.solenne.boss, regionOrder: 4, rng: seed,
+        party: geared(level), formation: DEFAULT_FORMATION, enemies: REGION_BY_ID.solenne.boss, regionOrder: 4, rng: seed,
+        relics: RELICS.map((r) => r.id), timeLimit: 3000,
       });
       b.runToEnd();
       expect(b.state.outcome).toBe('win');
       const phases = ofType(b.log, 'phase').filter((e) => e.target === 'e:0');
-      expect(phases.map((p) => p.phase)).toEqual([2, 3]);
+      expect(phases.map((p) => p.phase)).toEqual(expected);
       const iDeath = b.log.findIndex((e) => e.type === 'death' && e.target === 'e:0');
-      expect(b.log.indexOf(phases[1] as SimEvent)).toBeLessThan(iDeath);
+      expect(iDeath).toBeGreaterThan(0);
+      expect(b.log.indexOf(phases[phases.length - 1] as SimEvent)).toBeLessThan(iDeath);
     }
   });
 });
